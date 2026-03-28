@@ -1,77 +1,128 @@
-# wesbot
+<div align="center">
 
-Bot de música profissional para Discord, construído com `discord.py` e `yt-dlp`.
-Developed by **archwes**.
+```
+ ██╗    ██╗███████╗███████╗██████╗  ██████╗ ████████╗
+ ██║    ██║██╔════╝██╔════╝██╔══██╗██╔═══██╗╚══██╔══╝
+ ██║ █╗ ██║█████╗  ███████╗██████╔╝██║   ██║   ██║
+ ██║███╗██║██╔══╝  ╚════██║██╔══██╗██║   ██║   ██║
+ ╚███╔███╔╝███████╗███████║██████╔╝╚██████╔╝   ██║
+  ╚══╝╚══╝ ╚══════╝╚══════╝╚═════╝  ╚═════╝    ╚═╝
+```
+
+**Bot de música profissional para Discord**
+
+![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=flat&logo=python&logoColor=white)
+![discord.py](https://img.shields.io/badge/discord.py-2.7+-5865F2?style=flat&logo=discord&logoColor=white)
+![yt-dlp](https://img.shields.io/badge/yt--dlp-latest-FF0000?style=flat&logo=youtube&logoColor=white)
+![License](https://img.shields.io/badge/license-MIT-22c55e?style=flat)
+
+*Developed by **archwes***
+
+</div>
 
 ---
 
 ## Funcionalidades
 
-| Categoria | Detalhes |
-|---|---|
-| Reprodução | Tocar, Pausar, Continuar, Pular, Parar, Loop, Volume, Seek |
-| Fila | Fila persistente por servidor com navegação e remoção |
-| Fontes | YouTube, SoundCloud, Bandcamp e 1000+ via yt-dlp |
-| Capa de Álbum | Apple Music / iTunes API em resolução 1500×1500 px |
-| Slash Commands | Todos os comandos principais disponíveis via `/` |
-| Hot Reload | `run.py` reinicia automaticamente ao detectar alterações |
+- **Reprodução completa** — tocar, pausar, continuar, pular, parar, loop e seek
+- **Fila por servidor** — persistente por sessão, com remoção e limpeza
+- **1000+ fontes** — YouTube, SoundCloud, Bandcamp e muito mais via yt-dlp
+- **Capa de álbum** — Apple Music / iTunes API em 1500×1500 px
+- **Slash commands** — todos os comandos principais disponíveis via `/`
+- **Hot reload** — `run.py` reinicia automaticamente ao salvar qualquer `.py`
 
 ---
 
-## Instalação
+## Setup
 
-**Pré-requisitos:** Python 3.10+ e [FFmpeg](https://ffmpeg.org/) no `PATH`.
+### 1. Pré-requisitos
+
+- **Python 3.10+** — [python.org](https://www.python.org/downloads/)
+- **FFmpeg** no `PATH`
+
+```bash
+# Windows
+winget install ffmpeg
+
+# macOS
+brew install ffmpeg
+
+# Linux
+sudo apt install ffmpeg
+```
+
+### 2. Clonar o repositório
 
 ```bash
 git clone https://github.com/crypt0xf/wesbot.git
 cd wesbot
-pip install -r requirements.txt
-cp .env.example .env
-# Edite .env e defina DISCORD_TOKEN
 ```
 
-**Executar:**
+### 3. Instalar dependências
+
 ```bash
-python run.py      # recomendado — com hot reload
-python main.py     # execução direta
+pip install -r requirements.txt
 ```
+
+### 4. Configurar o ambiente
+
+```bash
+cp .env.example .env
+```
+
+Abra o `.env` e preencha:
+
+```env
+DISCORD_TOKEN=seu_token_aqui
+COMMAND_PREFIX=!
+```
+
+> Obtenha seu token em [discord.com/developers/applications](https://discord.com/developers/applications).
+> Ative as **Privileged Gateway Intents**: `Message Content` e `Server Members`.
+
+### 5. Executar
+
+```bash
+python run.py
+```
+
+> Use `python main.py` para execução direta sem hot reload.
 
 ---
 
 ## Comandos
 
 ### Reprodução
+
 | Comando | Aliases | Descrição |
 |---|---|---|
-| `!tocar <url\|busca>` | `play`, `p`, `t` | Toca por URL ou busca no YouTube/SoundCloud |
+| `!tocar <url\|busca>` | `play` `p` `t` | Toca por URL ou busca no YouTube/SoundCloud |
 | `!pausar` | `pause` | Pausa a reprodução |
-| `!continuar` | `resume`, `r` | Continua a reprodução |
-| `!pular` | `skip`, `s` | Pula para a próxima música |
+| `!continuar` | `resume` `r` | Continua a reprodução |
+| `!pular` | `skip` `s` | Pula para a próxima música |
 | `!parar` | `stop` | Para e limpa a fila |
-| `!loop` | `repetir` | Ativa/desativa loop da música atual |
+| `!loop` | `repetir` | Ativa/desativa loop da faixa atual |
 | `!volume <0-200>` | `vol` | Define o volume |
-| `!tocando` | `np`, `atual` | Exibe a música em reprodução |
-| `!seek <tempo>` | `ir` | Salta para um momento (ex: `1:30`, `90`) |
+| `!tocando` | `np` `atual` | Exibe a música em reprodução |
+| `!seek <tempo>` | `ir` | Salta para um momento — ex: `1:30` ou `90` |
 
 ### Fila
+
 | Comando | Aliases | Descrição |
 |---|---|---|
-| `!fila` | `queue`, `q`, `f` | Exibe a fila atual |
+| `!fila` | `queue` `q` `f` | Exibe a fila atual |
 | `!buscar <termo>` | `search` | Busca e escolhe entre 5 resultados |
-| `!remover <pos>` | `remove`, `rm` | Remove uma música pela posição |
+| `!remover <pos>` | `remove` `rm` | Remove uma música pela posição |
 | `!limpar` | `clear` | Limpa a fila (mantém a atual) |
 
-### Voz
-| Comando | Aliases | Descrição |
-|---|---|---|
-| `!sair` | `leave`, `dc` | Desconecta do canal de voz |
-
 ### Ferramentas
+
 | Comando | Aliases | Descrição |
 |---|---|---|
-| `!capa <busca>` | `art`, `cover` | Capa de álbum via Apple Music (1500×1500) |
-| `!ajuda` | `help`, `h` | Referência completa de comandos |
+| `!capa <busca>` | `art` `cover` | Capa via Apple Music em 1500×1500 px |
+| `!ajuda` | `help` `h` | Referência completa de comandos |
 | `!info` | `sobre` | Informações e latência do bot |
+| `!sair` | `leave` `dc` | Desconecta do canal de voz |
 
 ---
 
@@ -79,31 +130,16 @@ python main.py     # execução direta
 
 ```
 wesbot/
-├── main.py          — Ponto de entrada, setup do bot, eventos
-├── run.py           — Watcher com hot reload
+├── main.py          — Ponto de entrada, bot, eventos e handlers
+├── run.py           — Watcher com hot reload automático
 ├── core/
-│   └── logger.py    — Logger ANSI, banner e painéis de startup
+│   └── logger.py    — Logger ANSI, banner ASCII e painéis de startup
 ├── cogs/
-│   ├── music.py     — Player, fila, provider e comandos de música
+│   ├── music.py     — Player, fila, MusicProvider e comandos de música
 │   └── tools.py     — Capa de álbum, ajuda e info
 ├── requirements.txt
 ├── .env.example
 └── .gitignore
-```
-
-### Adicionando um novo provider
-
-Crie uma subclasse de `MusicProvider` em `cogs/music.py`:
-
-```python
-class SpotifyProvider(MusicProvider):
-    async def search(self, query: str, limit: int = 1, **kw) -> list[Track]: ...
-    async def resolve(self, url: str, **kw) -> Track: ...
-```
-
-E substitua no `MusicCog.__init__`:
-```python
-self._provider = SpotifyProvider()
 ```
 
 ---
