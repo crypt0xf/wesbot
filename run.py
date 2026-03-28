@@ -1,6 +1,6 @@
 # =============================================================================
 # wesbot — Watcher de Hot Reload
-# Developed by: archwes
+# Developed by: crypt0xf
 # =============================================================================
 """
 Executa main.py como subprocesso e reinicia automaticamente ao detectar

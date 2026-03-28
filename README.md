@@ -16,7 +16,7 @@
 ![yt-dlp](https://img.shields.io/badge/yt--dlp-latest-FF0000?style=flat&logo=youtube&logoColor=white)
 ![License](https://img.shields.io/badge/license-MIT-22c55e?style=flat)
 
-*Developed by **archwes***
+*Developed by **crypt0xf***
 
 </div>
 

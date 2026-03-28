@@ -1,6 +1,6 @@
 # =============================================================================
 # wesbot — Logger de Terminal Profissional
-# Developed by: archwes
+# Developed by: crypt0xf
 # =============================================================================
 """
 Saída de terminal rica com cores ANSI, painéis estruturados, banner ASCII
@@ -233,7 +233,7 @@ def print_banner() -> None:
         f"{accent}  ╚══╝╚══╝ ╚══════╝╚══════╝╚═════╝  ╚═════╝    ╚═╝{rst}",
         "",
         f"{sub}{bold}         🎵  B O T   D E   M Ú S I C A   P A R A   D I S C O R D{rst}",
-        f"{dim}                  Developed by archwes  ·  v1.0.0{rst}",
+        f"{dim}                  Developed by crypt0xf  ·  v1.0.0{rst}",
     ]
 
     print()

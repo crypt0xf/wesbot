@@ -1,6 +1,6 @@
 # =============================================================================
 # wesbot — Cog de Ferramentas
-# Developed by: archwes
+# Developed by: crypt0xf
 # =============================================================================
 """
 Comandos utilitários: busca de capa via Apple Music API, menu de ajuda e info do bot.
@@ -97,10 +97,10 @@ def build_art_embed(result: dict, query: str) -> discord.Embed:
     if artwork_url:
         embed.set_image(url=artwork_url)
         embed.set_footer(
-            text=f"🔍 Busca: {query} · Resolução: 1500×1500 · wesbot · Developed by archwes"
+            text=f"🔍 Busca: {query} · Resolução: 1500×1500 · wesbot · Developed by crypt0xf"
         )
     else:
-        embed.set_footer(text="Nenhuma capa encontrada · wesbot · Developed by archwes")
+        embed.set_footer(text="Nenhuma capa encontrada · wesbot · Developed by crypt0xf")
 
     return embed
 
@@ -207,7 +207,7 @@ class ToolsCog(commands.Cog, name="Ferramentas"):
                 new_embed.set_footer(
                     text=(
                         f"Resultado {current_idx + 1}/{len(results)} · "
-                        f"Resolução: 1500×1500 · wesbot · Developed by archwes"
+                        f"Resolução: 1500×1500 · wesbot · Developed by crypt0xf"
                     )
                 )
                 await msg.edit(embed=new_embed)
@@ -253,7 +253,7 @@ class ToolsCog(commands.Cog, name="Ferramentas"):
             title="🎵 wesbot — Referência de Comandos",
             description=(
                 f"Prefixo: `{prefix}` · Slash commands também suportados\n"
-                "Developed by **archwes**"
+                "Developed by **crypt0xf**"
             ),
             color=discord.Color.blurple(),
         )
@@ -307,7 +307,7 @@ class ToolsCog(commands.Cog, name="Ferramentas"):
             inline=False,
         )
 
-        embed.set_footer(text="wesbot · Developed by archwes")
+        embed.set_footer(text="wesbot · Developed by crypt0xf")
         await ctx.send(embed=embed)
 
     @commands.command(name="reset", aliases=["rs"])
@@ -329,7 +329,7 @@ class ToolsCog(commands.Cog, name="Ferramentas"):
             ),
             color=discord.Color.blurple(),
         )
-        embed.add_field(name="👨‍💻 Autor", value="archwes", inline=True)
+        embed.add_field(name="👨‍💻 Autor", value="crypt0xf", inline=True)
         embed.add_field(name="📦 Biblioteca", value="discord.py", inline=True)
         embed.add_field(name="🎵 Backend", value="yt-dlp + FFmpeg", inline=True)
         embed.add_field(
@@ -342,7 +342,7 @@ class ToolsCog(commands.Cog, name="Ferramentas"):
             value=f"{round(self.bot.latency * 1000)}ms",
             inline=True,
         )
-        embed.set_footer(text="wesbot · Developed by archwes")
+        embed.set_footer(text="wesbot · Developed by crypt0xf")
         await ctx.send(embed=embed)
 
 

@@ -1,6 +1,6 @@
 # =============================================================================
 # wesbot — Ponto de Entrada Principal
-# Developed by: archwes
+# Developed by: crypt0xf
 # =============================================================================
 
 import asyncio
@@ -39,7 +39,7 @@ bot = commands.Bot(
     intents=intents,
     help_command=None,
     case_insensitive=True,
-    description="🎵 wesbot — Developed by archwes",
+    description="🎵 wesbot — Developed by crypt0xf",
 )
 
 # ---------------------------------------------------------------------------
@@ -60,7 +60,7 @@ async def on_ready() -> None:
     await bot.change_presence(
         activity=discord.Activity(
             type=discord.ActivityType.listening,
-            name=f"{PREFIX}tocar | archwes",
+            name=f"{PREFIX}tocar | crypt0xf",
         )
     )
 

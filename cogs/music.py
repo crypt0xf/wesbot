@@ -1,6 +1,6 @@
 # =============================================================================
 # wesbot — Cog de Música
-# Developed by: archwes
+# Developed by: crypt0xf
 # =============================================================================
 """
 Cog de reprodução de áudio com gerenciamento de fila, suporte a loop e camada
@@ -276,7 +276,7 @@ class MusicPlayer:
                 value=track.requester.display_name,
                 inline=True,
             )
-        embed.set_footer(text="wesbot · Developed by archwes")
+        embed.set_footer(text="wesbot · Developed by crypt0xf")
         return embed
 
     # ------------------------------------------------------------------
@@ -437,7 +437,7 @@ class MusicCog(commands.Cog, name="Música"):
             embed.add_field(name="Duração", value=track.duration_fmt, inline=True)
             if track.thumbnail:
                 embed.set_thumbnail(url=track.thumbnail)
-            embed.set_footer(text="wesbot · Developed by archwes")
+            embed.set_footer(text="wesbot · Developed by crypt0xf")
             await ctx.send(embed=embed)
 
     @commands.command(name="pausar", aliases=["pause"])
@@ -511,7 +511,7 @@ class MusicCog(commands.Cog, name="Música"):
             embed.description = "\n".join(lines)
 
         embed.set_footer(
-            text=f"Loop: {'ativado' if gq.loop else 'desativado'} · wesbot · Developed by archwes"
+            text=f"Loop: {'ativado' if gq.loop else 'desativado'} · wesbot · Developed by crypt0xf"
         )
         await ctx.send(embed=embed)
 
