@@ -80,6 +80,29 @@ COMMAND_PREFIX=!
 > Obtenha seu token em [discord.com/developers/applications](https://discord.com/developers/applications).
 > Ative as **Privileged Gateway Intents**: `Message Content` e `Server Members`.
 
+### 4.1. Autenticação do YouTube (cookies)
+
+O YouTube pode bloquear downloads do yt-dlp com o erro *"Sign in to confirm you're not a bot"*.
+Para contornar, passe cookies de um navegador autenticado via `.env`:
+
+**Opção A — Ler cookies direto do navegador instalado (recomendado):**
+
+```env
+YTDL_COOKIES_BROWSER=chrome
+```
+
+Valores aceitos: `chrome`, `firefox`, `edge`, `brave`, `opera`, `chromium`.
+
+**Opção B — Arquivo `cookies.txt` exportado manualmente:**
+
+```env
+YTDL_COOKIES_FILE=./cookies.txt
+```
+
+Para exportar o arquivo, use a extensão **Get cookies.txt LOCALLY**
+([Chrome](https://chromewebstore.google.com/detail/get-cookiestxt-locally/cclelndahbckbenkjhflpdbgdldlbecc) /
+[Firefox](https://addons.mozilla.org/pt-BR/firefox/addon/cookies-txt/)) com sua conta do YouTube aberta.
+
 ### 5. Executar
 
 ```bash

@@ -11,6 +11,8 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
+import subprocess
 from abc import ABC, abstractmethod
 from collections import deque
 from dataclasses import dataclass, field
@@ -28,12 +30,19 @@ logger = logging.getLogger("wesbot.music")
 # ---------------------------------------------------------------------------
 FFMPEG_BEFORE_OPTIONS: str = (
     "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5"
+    " -protocol_whitelist file,http,https,tcp,tls,crypto"
 )
 FFMPEG_OPTIONS: str = "-vn"
 
 # ---------------------------------------------------------------------------
 # Opções do yt-dlp
 # ---------------------------------------------------------------------------
+# Autenticação de cookies para evitar bloqueio do YouTube:
+#   YTDL_COOKIES_BROWSER=chrome  (ou firefox, edge, brave, opera, chromium)
+#   YTDL_COOKIES_FILE=/caminho/para/cookies.txt
+_COOKIES_BROWSER = os.getenv("YTDL_COOKIES_BROWSER")
+_COOKIES_FILE = os.getenv("YTDL_COOKIES_FILE")
+
 YTDL_FORMAT_OPTIONS: dict[str, Any] = {
     "format": "bestaudio/best",
     "outtmpl": "%(extractor)s-%(id)s-%(title)s.%(ext)s",
@@ -48,6 +57,11 @@ YTDL_FORMAT_OPTIONS: dict[str, Any] = {
     "source_address": "0.0.0.0",
     "extract_flat": False,
 }
+
+if _COOKIES_BROWSER:
+    YTDL_FORMAT_OPTIONS["cookiesfrombrowser"] = (_COOKIES_BROWSER,)
+elif _COOKIES_FILE:
+    YTDL_FORMAT_OPTIONS["cookiefile"] = _COOKIES_FILE
 
 ytdl = yt_dlp.YoutubeDL(YTDL_FORMAT_OPTIONS)
 
@@ -249,6 +263,7 @@ class MusicPlayer:
             track.url,
             before_options=before_options,
             options=FFMPEG_OPTIONS,
+            stderr=subprocess.DEVNULL,
         )
         volume_source = discord.PCMVolumeTransformer(source, volume=self._q.volume)
 
