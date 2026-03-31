@@ -44,7 +44,7 @@ _COOKIES_BROWSER = os.getenv("YTDL_COOKIES_BROWSER")
 _COOKIES_FILE = os.getenv("YTDL_COOKIES_FILE")
 
 YTDL_FORMAT_OPTIONS: dict[str, Any] = {
-    "format": "bestaudio*[ext=webm]/bestaudio*[ext=m4a]/bestaudio*/best",
+    "format": "bestaudio/bestaudio*/best",
     "outtmpl": "%(extractor)s-%(id)s-%(title)s.%(ext)s",
     "restrictfilenames": True,
     "noplaylist": True,
@@ -62,9 +62,6 @@ if _COOKIES_BROWSER:
     YTDL_FORMAT_OPTIONS["cookiesfrombrowser"] = (_COOKIES_BROWSER,)
 elif _COOKIES_FILE:
     YTDL_FORMAT_OPTIONS["cookiefile"] = _COOKIES_FILE
-
-ytdl = yt_dlp.YoutubeDL(YTDL_FORMAT_OPTIONS)
-
 
 # ---------------------------------------------------------------------------
 # Utilitários
@@ -159,11 +156,14 @@ class YtDlpProvider(MusicProvider):
     Suporta nativamente YouTube, SoundCloud, Bandcamp e centenas de outros.
     """
 
+    def __init__(self) -> None:
+        self._ytdl = yt_dlp.YoutubeDL(YTDL_FORMAT_OPTIONS)
+
     async def _extract(self, query: str) -> dict[str, Any]:
         loop = asyncio.get_event_loop()
         return await loop.run_in_executor(
             None,
-            lambda: ytdl.extract_info(query, download=False),
+            lambda: self._ytdl.extract_info(query, download=False),
         )
 
     def _build_track(
