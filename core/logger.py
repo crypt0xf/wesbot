@@ -290,6 +290,7 @@ def print_ready(
     prefix: str,
     slash_count: int,
     latency_ms: float,
+    cookies_source: str = "não configurado",
 ) -> None:
 
     print_panel(
@@ -301,6 +302,7 @@ def print_ready(
             ("Prefixo",      prefix),
             ("Slash cmds",   str(slash_count)),
             ("Latência",     f"{latency_ms:.1f} ms"),
+            ("Cookies",      cookies_source),
             ("Iniciado em",  datetime.now().strftime("%d/%m/%Y  %H:%M:%S")),
         ],
     )

@@ -26,6 +26,15 @@ load_dotenv()
 TOKEN: str  = os.getenv("DISCORD_TOKEN", "")
 PREFIX: str = os.getenv("COMMAND_PREFIX", "!")
 
+_cookies_browser = os.getenv("YTDL_COOKIES_BROWSER")
+_cookies_file    = os.getenv("YTDL_COOKIES_FILE")
+if _cookies_browser:
+    COOKIES_SOURCE = f"navegador ({_cookies_browser})"
+elif _cookies_file:
+    COOKIES_SOURCE = f"arquivo ({_cookies_file})"
+else:
+    COOKIES_SOURCE = "não configurado"
+
 # ---------------------------------------------------------------------------
 # Intents e bot
 # ---------------------------------------------------------------------------
@@ -79,6 +88,7 @@ async def on_ready() -> None:
         prefix=PREFIX,
         slash_count=len(synced),
         latency_ms=bot.latency * 1000,
+        cookies_source=COOKIES_SOURCE,
     )
     logger.info("Aguardando comandos com prefixo '%s'", PREFIX)
 
