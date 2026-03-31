@@ -39,16 +39,20 @@
 
 - **Python 3.10+** — [python.org](https://www.python.org/downloads/)
 - **FFmpeg** no `PATH`
+- **Deno** no `PATH` — necessário para resolver o desafio JavaScript do YouTube
 
 ```bash
 # Windows
 winget install ffmpeg
+winget install DenoLand.Deno
 
 # macOS
 brew install ffmpeg
+brew install deno
 
 # Linux
 sudo apt install ffmpeg
+curl -fsSL https://deno.land/install.sh | sh
 ```
 
 ### 2. Clonar o repositório

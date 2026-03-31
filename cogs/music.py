@@ -56,6 +56,9 @@ YTDL_FORMAT_OPTIONS: dict[str, Any] = {
     "default_search": "ytsearch",
     "source_address": "0.0.0.0",
     "extract_flat": False,
+    # Baixa o script EJS do GitHub para resolver o desafio JS (n challenge) do YouTube.
+    # Requer Deno instalado: https://deno.com
+    "remote_components": ["ejs:github"],
 }
 
 if _COOKIES_BROWSER:
