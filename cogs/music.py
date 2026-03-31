@@ -426,9 +426,23 @@ class MusicCog(commands.Cog, name="Música"):
                     track = results[0]
             except yt_dlp.utils.DownloadError as exc:
                 logger.error("Erro de download yt-dlp: %s", exc)
-                await ctx.send(
-                    "❌ Falha ao obter o áudio. O link pode ser inválido ou não suportado."
-                )
+                msg = str(exc)
+                if "Sign in to confirm" in msg or "bot" in msg.lower():
+                    await ctx.send(
+                        "❌ O YouTube bloqueou a requisição.\n"
+                        "Configure `YTDL_COOKIES_FILE=./cookies.txt` no `.env` e exporte seus cookies do YouTube. "
+                        "Veja o README para instruções."
+                    )
+                elif "cookie" in msg.lower() or "Could not copy" in msg:
+                    await ctx.send(
+                        "❌ Falha ao ler cookies do navegador (provavelmente está aberto e bloqueando o banco).\n"
+                        "Use `YTDL_COOKIES_FILE=./cookies.txt` no `.env` em vez de `YTDL_COOKIES_BROWSER`. "
+                        "Veja o README para instruções."
+                    )
+                else:
+                    await ctx.send(
+                        "❌ Falha ao obter o áudio. O link pode ser inválido ou não suportado."
+                    )
                 return
             except Exception as exc:
                 logger.error("Erro inesperado ao buscar faixa: %s", exc)

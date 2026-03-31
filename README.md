@@ -83,25 +83,29 @@ COMMAND_PREFIX=!
 ### 4.1. Autenticação do YouTube (cookies)
 
 O YouTube pode bloquear downloads do yt-dlp com o erro *"Sign in to confirm you're not a bot"*.
-Para contornar, passe cookies de um navegador autenticado via `.env`:
+Para contornar, exporte seus cookies do YouTube e configure o `.env`:
 
-**Opção A — Ler cookies direto do navegador instalado (recomendado):**
+**Método recomendado — arquivo `cookies.txt`:**
 
-```env
-YTDL_COOKIES_BROWSER=chrome
-```
-
-Valores aceitos: `chrome`, `firefox`, `edge`, `brave`, `opera`, `chromium`.
-
-**Opção B — Arquivo `cookies.txt` exportado manualmente:**
+1. Instale a extensão **Get cookies.txt LOCALLY**
+   ([Chrome](https://chromewebstore.google.com/detail/get-cookiestxt-locally/cclelndahbckbenkjhflpdbgdldlbecc) /
+   [Firefox](https://addons.mozilla.org/pt-BR/firefox/addon/cookies-txt/))
+2. Abra [youtube.com](https://youtube.com) logado na sua conta
+3. Clique na extensão → **Export** → salve como `cookies.txt` na raiz do projeto
+4. Adicione ao `.env`:
 
 ```env
 YTDL_COOKIES_FILE=./cookies.txt
 ```
 
-Para exportar o arquivo, use a extensão **Get cookies.txt LOCALLY**
-([Chrome](https://chromewebstore.google.com/detail/get-cookiestxt-locally/cclelndahbckbenkjhflpdbgdldlbecc) /
-[Firefox](https://addons.mozilla.org/pt-BR/firefox/addon/cookies-txt/)) com sua conta do YouTube aberta.
+**Alternativa — ler do navegador diretamente (só funciona com o navegador fechado):**
+
+```env
+YTDL_COOKIES_BROWSER=chrome
+```
+
+> **Windows:** o Chrome bloqueia o banco de cookies enquanto está aberto. Use o método `cookies.txt`.
+> Valores aceitos para `YTDL_COOKIES_BROWSER`: `chrome`, `firefox`, `edge`, `brave`, `opera`, `chromium`.
 
 ### 5. Executar
 
