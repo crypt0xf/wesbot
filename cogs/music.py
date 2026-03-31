@@ -44,7 +44,7 @@ _COOKIES_BROWSER = os.getenv("YTDL_COOKIES_BROWSER")
 _COOKIES_FILE = os.getenv("YTDL_COOKIES_FILE")
 
 YTDL_FORMAT_OPTIONS: dict[str, Any] = {
-    "format": "bestaudio/best",
+    "format": "bestaudio*[ext=webm]/bestaudio*[ext=m4a]/bestaudio*/best",
     "outtmpl": "%(extractor)s-%(id)s-%(title)s.%(ext)s",
     "restrictfilenames": True,
     "noplaylist": True,
