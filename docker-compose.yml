@@ -1,0 +1,68 @@
+# =============================================================================
+# wesbot — development stack
+# Usage: pnpm docker:up / docker compose up -d
+# =============================================================================
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: wesbot-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: wesbot
+      POSTGRES_PASSWORD: wesbot
+      POSTGRES_DB: wesbot
+      POSTGRES_INITDB_ARGS: '--encoding=UTF-8 --locale=C'
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U wesbot -d wesbot']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: wesbot-redis
+    restart: unless-stopped
+    command: ['redis-server', '--save', '60', '1', '--loglevel', 'warning']
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  lavalink:
+    image: ghcr.io/lavalink-devs/lavalink:4
+    container_name: wesbot-lavalink
+    restart: unless-stopped
+    environment:
+      _JAVA_OPTIONS: '-Xmx512m -Xms256m'
+      SERVER_PORT: 2333
+      LAVALINK_SERVER_PASSWORD: youshallnotpass
+    volumes:
+      - ./docker/lavalink/application.yml:/opt/Lavalink/application.yml:ro
+      - lavalink_plugins:/opt/Lavalink/plugins
+    ports:
+      - '2333:2333'
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'curl -fsS -H "Authorization: youshallnotpass" http://localhost:2333/v4/info || exit 1',
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+volumes:
+  postgres_data:
+  redis_data:
+  lavalink_plugins:

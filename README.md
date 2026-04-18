@@ -1,180 +1,156 @@
-<div align="center">
+# wesbot
 
-<pre>
-    ██╗    ██╗███████╗███████╗██████╗  ██████╗ ████████╗
-    ██║    ██║██╔════╝██╔════╝██╔══██╗██╔═══██╗╚══██╔══╝
- ██║ █╗ ██║█████╗  ███████╗██████╔╝██║   ██║   ██║
- ██║███╗██║██╔══╝  ╚════██║██╔══██╗██║   ██║   ██║
- ╚███╔███╔╝███████╗███████║██████╔╝╚██████╔╝   ██║
-  ╚══╝╚══╝ ╚══════╝╚══════╝╚═════╝  ╚═════╝    ╚═╝
-</pre>
+> Plataforma Discord: bot de música + painel de gerenciamento completo.
 
-**Bot de música profissional para Discord**
+[![CI](https://github.com/crypt0xf/wesbot/actions/workflows/ci.yml/badge.svg)](https://github.com/crypt0xf/wesbot/actions/workflows/ci.yml)
+![Node](https://img.shields.io/badge/node-20.18+-43853d?logo=node.js&logoColor=white)
+![pnpm](https://img.shields.io/badge/pnpm-9-F69220?logo=pnpm&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.6-3178C6?logo=typescript&logoColor=white)
+![License](https://img.shields.io/badge/license-MIT-22c55e)
 
-![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=flat&logo=python&logoColor=white)
-![discord.py](https://img.shields.io/badge/discord.py-2.7+-5865F2?style=flat&logo=discord&logoColor=white)
-![yt-dlp](https://img.shields.io/badge/yt--dlp-latest-FF0000?style=flat&logo=youtube&logoColor=white)
-![License](https://img.shields.io/badge/license-MIT-22c55e?style=flat)
-
-*Developed by **crypt0xf***
-
-</div>
+**Developed by [crypt0xf](https://github.com/crypt0xf)**
 
 ---
 
-## Funcionalidades
+## 🧭 Visão geral
 
-- **Reprodução completa** — tocar, pausar, continuar, pular, parar, loop e seek
-- **Fila por servidor** — persistente por sessão, com remoção e limpeza
-- **1000+ fontes** — YouTube, SoundCloud, Bandcamp e muito mais via yt-dlp
-- **Capa de álbum** — Apple Music / iTunes API em 1500×1500 px
-- **Slash commands** — todos os comandos principais disponíveis via `/`
-- **Hot reload** — `run.py` reinicia automaticamente ao salvar qualquer `.py`
+Monorepo TypeScript com três aplicações e quatro packages compartilhados:
+
+| App | Stack | Responsabilidade |
+|---|---|---|
+| `apps/bot` | discord.js · shoukaku | Conexão com Discord, slash commands, reprodução via Lavalink |
+| `apps/api` | Fastify · Zod · Socket.IO | API REST + WebSocket consumidos pelo dashboard |
+| `apps/dashboard` | Next.js 15 · Tailwind · shadcn/ui | Painel web de controle |
+
+| Package | Propósito |
+|---|---|
+| `@wesbot/shared` | Schemas Zod, enums, contratos de eventos (fonte da verdade entre bot/api/dashboard) |
+| `@wesbot/database` | Prisma schema + client singleton |
+| `@wesbot/ui` | Componentes React reutilizáveis (populado a partir da Fase 5) |
+| `@wesbot/config` | Presets compartilhados (tsconfig, eslint, tailwind) |
+
+Detalhes arquiteturais em [`ARCHITECTURE.md`](./ARCHITECTURE.md). Roadmap em [`PLAN.md`](./PLAN.md).
 
 ---
 
-## Setup
+## ⚡ Quick start (Windows/macOS/Linux)
 
-### 1. Pré-requisitos
+### Pré-requisitos
 
-- **Python 3.10+** — [python.org](https://www.python.org/downloads/)
-- **FFmpeg** no `PATH`
-- **Deno** no `PATH` — necessário para resolver o desafio JavaScript do YouTube
+- **Node.js 20.18+** — [nodejs.org](https://nodejs.org/) ou `nvm install 20.18.1`
+- **pnpm 9** — `npm install -g pnpm@9.15.0`
+- **Docker Desktop** (para Postgres + Redis + Lavalink) — [docker.com](https://www.docker.com/)
 
-```bash
-# Windows
-winget install ffmpeg
-winget install DenoLand.Deno
-
-# macOS
-brew install ffmpeg
-brew install deno
-
-# Linux
-sudo apt install ffmpeg
-curl -fsSL https://deno.land/install.sh | sh
-```
-
-### 2. Clonar o repositório
+### Setup
 
 ```bash
 git clone https://github.com/crypt0xf/wesbot.git
 cd wesbot
-```
 
-### 3. Instalar dependências
+# 1. Instalar dependências
+pnpm install
 
-```bash
-pip install -r requirements.txt
-```
-
-### 4. Configurar o ambiente
-
-```bash
+# 2. Configurar variáveis
 cp .env.example .env
+# → preencha DISCORD_TOKEN, NEXTAUTH_SECRET, SESSION_SECRET
+
+# 3. Subir infra (Postgres, Redis, Lavalink)
+pnpm docker:up
+
+# 4. Gerar o Prisma client + rodar migrações
+pnpm db:generate
+pnpm db:migrate
+
+# 5. Rodar tudo em dev (bot + api + dashboard)
+pnpm dev
 ```
 
-Abra o `.env` e preencha:
+Dashboard em `http://localhost:3000`. API em `http://localhost:4000`.
 
-```env
-DISCORD_TOKEN=seu_token_aqui
-COMMAND_PREFIX=!
-```
+> Como rodar **apenas** um app: `pnpm --filter @wesbot/bot dev` (ou `@wesbot/api`, `@wesbot/dashboard`).
 
-> Obtenha seu token em [discord.com/developers/applications](https://discord.com/developers/applications).
-> Ative as **Privileged Gateway Intents**: `Message Content` e `Server Members`.
-
-### 4.1. Autenticação do YouTube (cookies)
-
-O YouTube pode bloquear downloads do yt-dlp com o erro *"Sign in to confirm you're not a bot"*.
-Para contornar, exporte seus cookies do YouTube e configure o `.env`:
-
-**Método recomendado — arquivo `cookies.txt`:**
-
-1. Instale a extensão **Get cookies.txt LOCALLY**
-   ([Chrome](https://chromewebstore.google.com/detail/get-cookiestxt-locally/cclelndahbckbenkjhflpdbgdldlbecc) /
-   [Firefox](https://addons.mozilla.org/pt-BR/firefox/addon/cookies-txt/))
-2. Abra [youtube.com](https://youtube.com) logado na sua conta
-3. Clique na extensão → **Export** → salve como `cookies.txt` na raiz do projeto
-4. Adicione ao `.env`:
-
-```env
-YTDL_COOKIES_FILE=./cookies.txt
-```
-
-**Alternativa — ler do navegador diretamente (só funciona com o navegador fechado):**
-
-```env
-YTDL_COOKIES_BROWSER=chrome
-```
-
-> **Windows:** o Chrome bloqueia o banco de cookies enquanto está aberto. Use o método `cookies.txt`.
-> Valores aceitos para `YTDL_COOKIES_BROWSER`: `chrome`, `firefox`, `edge`, `brave`, `opera`, `chromium`.
-
-### 5. Executar
+### Gerando segredos
 
 ```bash
-python run.py
+# Linux/macOS
+openssl rand -base64 32
+
+# Windows PowerShell
+[Convert]::ToBase64String((1..32 | ForEach-Object { Get-Random -Maximum 256 }))
 ```
 
-> Use `python main.py` para execução direta sem hot reload.
-
 ---
 
-## Comandos
-
-### Reprodução
-
-| Comando | Aliases | Descrição |
-|---|---|---|
-| `!tocar <url\|busca>` | `play` `p` `t` | Toca por URL ou busca no YouTube/SoundCloud |
-| `!pausar` | `pause` | Pausa a reprodução |
-| `!continuar` | `resume` `r` | Continua a reprodução |
-| `!pular` | `skip` `s` | Pula para a próxima música |
-| `!parar` | `stop` | Para e limpa a fila |
-| `!loop` | `repetir` | Ativa/desativa loop da faixa atual |
-| `!volume <0-200>` | `vol` | Define o volume |
-| `!tocando` | `np` `atual` | Exibe a música em reprodução |
-| `!seek <tempo>` | `ir` | Salta para um momento — ex: `1:30` ou `90` |
-
-### Fila
-
-| Comando | Aliases | Descrição |
-|---|---|---|
-| `!fila` | `queue` `q` `f` | Exibe a fila atual |
-| `!buscar <termo>` | `search` | Busca e escolhe entre 5 resultados |
-| `!remover <pos>` | `remove` `rm` | Remove uma música pela posição |
-| `!limpar` | `clear` | Limpa a fila (mantém a atual) |
-
-### Ferramentas
-
-| Comando | Aliases | Descrição |
-|---|---|---|
-| `!capa <busca>` | `art` `cover` | Capa via Apple Music em 1500×1500 px |
-| `!ajuda` | `help` `h` | Referência completa de comandos |
-| `!info` | `sobre` | Informações e latência do bot |
-| `!sair` | `leave` `dc` | Desconecta do canal de voz |
-
----
-
-## Estrutura
+## 🗂️ Estrutura
 
 ```
 wesbot/
-├── main.py          — Ponto de entrada, bot, eventos e handlers
-├── run.py           — Watcher com hot reload automático
-├── core/
-│   └── logger.py    — Logger ANSI, banner ASCII e painéis de startup
-├── cogs/
-│   ├── music.py     — Player, fila, MusicProvider e comandos de música
-│   └── tools.py     — Capa de álbum, ajuda e info
-├── requirements.txt
-├── .env.example
-└── .gitignore
+├── apps/
+│   ├── bot/              # discord.js + shoukaku
+│   ├── api/              # Fastify
+│   └── dashboard/        # Next.js 15
+├── packages/
+│   ├── config/           # Presets compartilhados
+│   ├── shared/           # Zod schemas + contratos
+│   ├── database/         # Prisma
+│   └── ui/               # Componentes React
+├── docker/
+│   └── lavalink/         # application.yml + plugins
+├── docs/                 # features.md, api.md
+├── docker-compose.yml
+├── turbo.json
+└── pnpm-workspace.yaml
 ```
 
 ---
 
-## Licença
+## 🎵 Features (em construção)
 
-MIT — livre para uso e modificação.
+Lista completa em [`docs/features.md`](./docs/features.md). Progresso em fases:
+
+- ✅ **Fase 0** — Scaffolding + infra
+- ⏳ **Fase 1** — Bot fundamentos (discord.js, Pino, DI, `/ping`, health)
+- ⏳ **Fase 2** — Música core (Lavalink, `/play`, fila, loop, seek)
+- ⏳ **Fase 3** — Música avançada (Spotify, filtros, autoplay, lyrics)
+- ⏳ **Fase 4** — DB + API backbone (OAuth2, guards, WS)
+- ⏳ **Fase 5** — Dashboard base (design system, sidebar, overview)
+- ⏳ **Fase 6** — Dashboard música (player persistente, fila DnD)
+- ⏳ **Fase 7** — Moderação (warns, automod, logs)
+- ⏳ **Fase 8** — Gerenciamento (canais, roles, permissões)
+- ⏳ **Fase 9** — Engajamento (welcome, levels, giveaways, tickets)
+- ⏳ **Fase 10** — Produtividade (custom commands, scheduled messages)
+- ⏳ **Fase 11** — Polish + QA (i18n, Lighthouse, E2E)
+
+---
+
+## 🧪 Scripts
+
+| Comando | Descrição |
+|---|---|
+| `pnpm dev` | Bot + API + Dashboard em modo watch |
+| `pnpm build` | Build de produção de todos os apps |
+| `pnpm lint` | ESLint em todo o monorepo |
+| `pnpm typecheck` | TypeScript strict em todo o monorepo |
+| `pnpm test` | Vitest em todos os packages |
+| `pnpm format` | Prettier em todos os arquivos |
+| `pnpm docker:up` | Sobe Postgres + Redis + Lavalink |
+| `pnpm docker:down` | Desliga infra |
+| `pnpm db:studio` | Prisma Studio (GUI do banco) |
+
+---
+
+## 🔒 Segurança
+
+- OAuth2 Discord com PKCE · sessões `httpOnly` / `sameSite=lax` / `secure` em prod
+- Validação server-side de permissões Discord em **toda** rota da API
+- Rate limiting por usuário e IP (Redis)
+- CSRF protection · sanitização de embeds / custom commands
+- Audit log interno (quem fez o quê no painel)
+
+---
+
+## 📄 Licença
+
+MIT — ver [`LICENSE`](./LICENSE).
+
+> O código Python original foi preservado na branch [`legacy-python`](https://github.com/crypt0xf/wesbot/tree/legacy-python) para referência histórica.

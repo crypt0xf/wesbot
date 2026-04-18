@@ -1,0 +1,297 @@
+// =============================================================================
+// wesbot — Prisma schema
+// Snowflakes (Discord IDs) are stored as BigInt for space + correctness.
+// JSON is used for flexible nested config; prefer it over sprawling tables
+// when the data is read as a whole and never joined against.
+// =============================================================================
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// --- Core ---------------------------------------------------------------------
+
+model Guild {
+  id                    BigInt   @id
+  prefix                String   @default("!")
+  locale                String   @default("pt-BR")
+  djRoleId              BigInt?
+  musicChannelId        BigInt?
+  announceNowPlaying    Boolean  @default(true)
+  twentyFourSeven       Boolean  @default(false)
+  autoDisconnectMinutes Int?     @default(5)
+  defaultVolume         Int      @default(100)
+  voteSkipThreshold     Float    @default(0.5)
+  welcomeConfig         Json?
+  leaveConfig           Json?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  playlists         Playlist[]
+  warns             Warn[]
+  modLogs           ModLog[]
+  automodRules      AutomodRule[]
+  reactionRoles     ReactionRole[]
+  autoRoles         AutoRole[]
+  levelUsers        LevelUser[]
+  giveaways         Giveaway[]
+  tickets           Ticket[]
+  customCommands    CustomCommand[]
+  tags              Tag[]
+  scheduledMessages ScheduledMessage[]
+  auditLogs         DashboardAuditLog[]
+
+  @@index([locale])
+}
+
+// --- Music --------------------------------------------------------------------
+
+model Playlist {
+  id        String   @id @default(cuid())
+  guildId   BigInt?
+  ownerId   BigInt
+  name      String
+  tracks    Json     // Array of Track (validated by Zod at the edge)
+  isPublic  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  guild Guild? @relation(fields: [guildId], references: [id], onDelete: Cascade)
+
+  @@index([ownerId])
+  @@index([guildId])
+}
+
+// --- Moderation --------------------------------------------------------------
+
+model Warn {
+  id           String   @id @default(cuid())
+  guildId      BigInt
+  userId       BigInt
+  moderatorId  BigInt
+  reason       String   @db.VarChar(512)
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  guild Guild @relation(fields: [guildId], references: [id], onDelete: Cascade)
+
+  @@index([guildId, userId])
+  @@index([guildId, active])
+}
+
+enum ModActionType {
+  warn
+  kick
+  ban
+  tempban
+  unban
+  timeout
+  untimeout
+  purge
+}
+
+model ModLog {
+  id             String        @id @default(cuid())
+  guildId        BigInt
+  type           ModActionType
+  targetUserId   BigInt
+  moderatorId    BigInt
+  reason         String?       @db.VarChar(512)
+  durationSec    Int?
+  createdAt      DateTime      @default(now())
+
+  guild Guild @relation(fields: [guildId], references: [id], onDelete: Cascade)
+
+  @@index([guildId, createdAt])
+  @@index([guildId, targetUserId])
+  @@index([guildId, type])
+}
+
+enum AutomodRuleType {
+  spam
+  caps
+  mentions
+  links
+  invites
+  wordlist
+  anti_raid
+}
+
+enum AutomodAction {
+  delete
+  warn
+  timeout
+  kick
+  ban
+}
+
+model AutomodRule {
+  id               String          @id @default(cuid())
+  guildId          BigInt
+  type             AutomodRuleType
+  enabled          Boolean         @default(true)
+  action           AutomodAction
+  config           Json            @default("{}")
+  exemptRoleIds    BigInt[]        @default([])
+  exemptChannelIds BigInt[]        @default([])
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  guild Guild @relation(fields: [guildId], references: [id], onDelete: Cascade)
+
+  @@unique([guildId, type])
+}
+
+// --- Engagement --------------------------------------------------------------
+
+model ReactionRole {
+  id        String   @id @default(cuid())
+  guildId   BigInt
+  channelId BigInt
+  messageId BigInt
+  /// Array of { emoji, roleId, label?, style? } — see shared schema.
+  entries   Json
+  /// "toggle" | "unique" | "verify" | "drop"
+  mode      String   @default("toggle")
+  createdAt DateTime @default(now())
+
+  guild Guild @relation(fields: [guildId], references: [id], onDelete: Cascade)
+
+  @@index([guildId])
+  @@index([messageId])
+}
+
+model AutoRole {
+  id        String   @id @default(cuid())
+  guildId   BigInt
+  roleId    BigInt
+  forBots   Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  guild Guild @relation(fields: [guildId], references: [id], onDelete: Cascade)
+
+  @@unique([guildId, roleId, forBots])
+}
+
+model LevelUser {
+  guildId   BigInt
+  userId    BigInt
+  xp        Int      @default(0)
+  level     Int      @default(0)
+  lastXpAt  DateTime?
+  updatedAt DateTime @updatedAt
+
+  guild Guild @relation(fields: [guildId], references: [id], onDelete: Cascade)
+
+  @@id([guildId, userId])
+  @@index([guildId, xp])
+}
+
+model Giveaway {
+  id            String    @id @default(cuid())
+  guildId       BigInt
+  channelId     BigInt
+  messageId     BigInt
+  hostId        BigInt
+  prize         String    @db.VarChar(256)
+  winnerCount   Int       @default(1)
+  endsAt        DateTime
+  endedAt       DateTime?
+  winnerIds     BigInt[]  @default([])
+  /// { minLevel?: number; requiredRoleIds?: string[]; requiredGuildId?: string }
+  requirements  Json?
+  createdAt     DateTime  @default(now())
+
+  guild Guild @relation(fields: [guildId], references: [id], onDelete: Cascade)
+
+  @@index([guildId, endsAt])
+}
+
+model Ticket {
+  id         String    @id @default(cuid())
+  guildId    BigInt
+  channelId  BigInt
+  openedById BigInt
+  closedById BigInt?
+  topic      String?   @db.VarChar(256)
+  transcript Json?
+  closedAt   DateTime?
+  createdAt  DateTime  @default(now())
+
+  guild Guild @relation(fields: [guildId], references: [id], onDelete: Cascade)
+
+  @@index([guildId, closedAt])
+}
+
+// --- Productivity ------------------------------------------------------------
+
+model CustomCommand {
+  id        String   @id @default(cuid())
+  guildId   BigInt
+  name      String
+  /// Message content or embed payload.
+  response  Json
+  createdBy BigInt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  guild Guild @relation(fields: [guildId], references: [id], onDelete: Cascade)
+
+  @@unique([guildId, name])
+}
+
+model Tag {
+  id        String   @id @default(cuid())
+  guildId   BigInt
+  name      String
+  content   String   @db.VarChar(2000)
+  createdBy BigInt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  guild Guild @relation(fields: [guildId], references: [id], onDelete: Cascade)
+
+  @@unique([guildId, name])
+}
+
+model ScheduledMessage {
+  id             String    @id @default(cuid())
+  guildId        BigInt
+  channelId      BigInt
+  createdBy      BigInt
+  cron           String    // Standard cron expression (UTC)
+  payload        Json      // message content + embed
+  lastFiredAt    DateTime?
+  nextFireAt     DateTime?
+  enabled        Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+
+  guild Guild @relation(fields: [guildId], references: [id], onDelete: Cascade)
+
+  @@index([enabled, nextFireAt])
+}
+
+// --- Dashboard ---------------------------------------------------------------
+
+model DashboardAuditLog {
+  id         String   @id @default(cuid())
+  guildId    BigInt?
+  actorId    BigInt
+  action     String   // e.g. "mod.ban", "settings.update"
+  targetId   String?  // free-form (user id, role id, channel id...)
+  metadata   Json?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  guild Guild? @relation(fields: [guildId], references: [id], onDelete: Cascade)
+
+  @@index([guildId, createdAt])
+  @@index([actorId, createdAt])
+}

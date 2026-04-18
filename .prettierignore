@@ -1,0 +1,17 @@
+node_modules
+dist
+build
+.next
+.turbo
+coverage
+pnpm-lock.yaml
+*.md.bak
+generated
+legacy-python
+cogs
+core
+main.py
+run.py
+send_once.py
+cookies.txt
+*.log
