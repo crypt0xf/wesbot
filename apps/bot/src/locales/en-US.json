@@ -2,7 +2,8 @@
   "common": {
     "yes": "Yes",
     "no": "No",
-    "unknown": "Unknown"
+    "unknown": "Unknown",
+    "by": "by"
   },
   "commands": {
     "ping": {
@@ -36,12 +37,99 @@
         "fun": "Fun"
       },
       "footerTip": "Slash commands sync automatically."
+    },
+    "play": {
+      "description": "Play a track or add it to the queue",
+      "queryOption": "Link or search query",
+      "loading": "🔎 Searching…",
+      "added": "➕ Queued: **{title}**",
+      "addedPlaylist": "➕ Playlist **{name}** queued ({count} tracks)",
+      "startedPlaying": "▶️ Now playing: **{title}**"
+    },
+    "pause": {
+      "description": "Pause the current track",
+      "paused": "⏸️ Playback paused.",
+      "alreadyPaused": "Already paused."
+    },
+    "resume": {
+      "description": "Resume a paused track",
+      "resumed": "▶️ Playback resumed.",
+      "notPaused": "Not paused."
+    },
+    "skip": {
+      "description": "Skip to the next track",
+      "skipped": "⏭️ Skipped **{title}**.",
+      "skippedNoNext": "⏭️ Nothing else queued — disconnecting."
+    },
+    "stop": {
+      "description": "Stop playback, clear the queue, and leave the voice channel",
+      "stopped": "⏹️ Playback stopped."
+    },
+    "seek": {
+      "description": "Jump to a specific point in the current track",
+      "positionOption": "Position (mm:ss or seconds)",
+      "seeked": "⏩ Seeked to **{position}**."
+    },
+    "volume": {
+      "description": "Set or view the playback volume",
+      "levelOption": "Volume level (0-200)",
+      "changed": "🔊 Volume: **{volume}%**",
+      "current": "🔊 Current volume: **{volume}%**"
+    },
+    "queue": {
+      "description": "Show the playback queue",
+      "title": "Queue",
+      "empty": "The queue is empty.",
+      "currentTrack": "Now playing",
+      "upcoming": "Up next",
+      "more": "… and {count} more",
+      "footer": "{count} track(s) · loop: {loop}"
+    },
+    "loop": {
+      "description": "Toggle the loop mode",
+      "modeOption": "Loop mode",
+      "set": "🔁 Loop mode: **{mode}**",
+      "modes": {
+        "off": "off",
+        "track": "track",
+        "queue": "queue"
+      }
+    },
+    "nowplaying": {
+      "description": "Show the currently playing track",
+      "title": "Now playing",
+      "position": "Position",
+      "duration": "Duration",
+      "requestedBy": "Requested by",
+      "nothing": "Nothing is playing."
+    }
+  },
+  "music": {
+    "buttons": {
+      "pause": "Pause",
+      "resume": "Resume",
+      "skip": "Skip",
+      "stop": "Stop",
+      "loop": "Loop"
     }
   },
   "errors": {
     "generic": "❌ Something went wrong. I logged the error — try again in a moment.",
     "permission": "🚫 You don't have permission to run this command.",
     "notFound": "🔎 Couldn't find what you asked for.",
-    "validation": "⚠️ Invalid input: {message}"
+    "validation": "⚠️ Invalid input: {message}",
+    "music": {
+      "notInVoice": "🔇 Join a voice channel first.",
+      "sameVoice": "🔇 You need to be in the same voice channel as me.",
+      "notPlaying": "🔇 Nothing is playing right now.",
+      "noResults": "🔎 No results found for that query.",
+      "queueFull": "📥 The queue is full — try again later.",
+      "invalidSeek": "⚠️ Invalid position. Use `mm:ss` or a number of seconds.",
+      "invalidVolume": "⚠️ Invalid volume. Use a number between 0 and 200.",
+      "loadFailed": "⚠️ Failed to load that audio: {message}",
+      "notSeekable": "⚠️ Cannot seek in this track.",
+      "noNodes": "🛑 No Lavalink nodes are currently available.",
+      "guildOnly": "This command only works in servers."
+    }
   }
 }

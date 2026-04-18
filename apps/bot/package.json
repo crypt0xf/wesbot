@@ -1,6 +1,6 @@
 {
   "name": "@wesbot/bot",
-  "version": "0.0.1",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -20,6 +20,7 @@
     "ioredis": "^5.4.2",
     "pino": "^9.5.0",
     "pino-pretty": "^13.0.0",
+    "shoukaku": "^4.3.0",
     "zod": "^3.24.1"
   },
   "devDependencies": {

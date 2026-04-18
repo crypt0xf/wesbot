@@ -2,7 +2,8 @@
   "common": {
     "yes": "Sim",
     "no": "Não",
-    "unknown": "Desconhecido"
+    "unknown": "Desconhecido",
+    "by": "por"
   },
   "commands": {
     "ping": {
@@ -36,12 +37,99 @@
         "fun": "Diversão"
       },
       "footerTip": "Slash commands são sincronizados automaticamente."
+    },
+    "play": {
+      "description": "Toca uma música ou adiciona à fila",
+      "queryOption": "Link ou termo de busca",
+      "loading": "🔎 Buscando…",
+      "added": "➕ Adicionado à fila: **{title}**",
+      "addedPlaylist": "➕ Playlist **{name}** adicionada ({count} faixas)",
+      "startedPlaying": "▶️ Tocando agora: **{title}**"
+    },
+    "pause": {
+      "description": "Pausa a reprodução atual",
+      "paused": "⏸️ Reprodução pausada.",
+      "alreadyPaused": "Já está pausado."
+    },
+    "resume": {
+      "description": "Retoma a reprodução pausada",
+      "resumed": "▶️ Reprodução retomada.",
+      "notPaused": "Não está pausado."
+    },
+    "skip": {
+      "description": "Pula para a próxima faixa",
+      "skipped": "⏭️ Pulei **{title}**.",
+      "skippedNoNext": "⏭️ Nada mais na fila — desconectando."
+    },
+    "stop": {
+      "description": "Para a reprodução, limpa a fila e sai do canal de voz",
+      "stopped": "⏹️ Reprodução encerrada."
+    },
+    "seek": {
+      "description": "Avança para um ponto específico da faixa atual",
+      "positionOption": "Posição (mm:ss ou segundos)",
+      "seeked": "⏩ Avancei para **{position}**."
+    },
+    "volume": {
+      "description": "Define ou mostra o volume da reprodução",
+      "levelOption": "Nível de volume (0-200)",
+      "changed": "🔊 Volume: **{volume}%**",
+      "current": "🔊 Volume atual: **{volume}%**"
+    },
+    "queue": {
+      "description": "Mostra a fila de reprodução",
+      "title": "Fila",
+      "empty": "Fila vazia.",
+      "currentTrack": "Tocando agora",
+      "upcoming": "A seguir",
+      "more": "… e mais {count}",
+      "footer": "{count} faixa(s) · loop: {loop}"
+    },
+    "loop": {
+      "description": "Alterna o modo de repetição",
+      "modeOption": "Modo de repetição",
+      "set": "🔁 Modo de loop: **{mode}**",
+      "modes": {
+        "off": "desligado",
+        "track": "faixa",
+        "queue": "fila"
+      }
+    },
+    "nowplaying": {
+      "description": "Mostra a faixa tocando no momento",
+      "title": "Tocando agora",
+      "position": "Posição",
+      "duration": "Duração",
+      "requestedBy": "Pedido por",
+      "nothing": "Nada tocando."
+    }
+  },
+  "music": {
+    "buttons": {
+      "pause": "Pausar",
+      "resume": "Retomar",
+      "skip": "Pular",
+      "stop": "Parar",
+      "loop": "Loop"
     }
   },
   "errors": {
     "generic": "❌ Algo deu errado. Já anotei o erro — tente de novo em instantes.",
     "permission": "🚫 Você não tem permissão para usar este comando.",
     "notFound": "🔎 Não encontrei o que você pediu.",
-    "validation": "⚠️ Entrada inválida: {message}"
+    "validation": "⚠️ Entrada inválida: {message}",
+    "music": {
+      "notInVoice": "🔇 Entre em um canal de voz primeiro.",
+      "sameVoice": "🔇 Você precisa estar no mesmo canal de voz que eu.",
+      "notPlaying": "🔇 Nada está tocando no momento.",
+      "noResults": "🔎 Nenhum resultado encontrado para essa busca.",
+      "queueFull": "📥 A fila está cheia — tente novamente depois.",
+      "invalidSeek": "⚠️ Posição inválida. Use o formato `mm:ss` ou segundos.",
+      "invalidVolume": "⚠️ Volume inválido. Use um número entre 0 e 200.",
+      "loadFailed": "⚠️ Não consegui carregar esse áudio: {message}",
+      "notSeekable": "⚠️ Não é possível avançar nesta faixa.",
+      "noNodes": "🛑 Nenhum nó Lavalink disponível no momento.",
+      "guildOnly": "Este comando só funciona em servidores."
+    }
   }
 }

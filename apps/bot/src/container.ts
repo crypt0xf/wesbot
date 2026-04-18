@@ -1,5 +1,6 @@
 import type { Client } from 'discord.js';
 
+import type { MusicController } from './application/music/music-controller';
 import type { I18n } from './infrastructure/i18n';
 import type { Logger } from './logger';
 import type { SlashCommand } from './types';
@@ -15,6 +16,7 @@ export interface Container {
   client: Client;
   /** All registered slash commands, keyed by command name. Used by /help. */
   commands: ReadonlyMap<string, SlashCommand>;
+  music: MusicController;
   readonly startedAt: number;
 }
 
