@@ -16,18 +16,18 @@
 
 Monorepo TypeScript com três aplicações e quatro packages compartilhados:
 
-| App | Stack | Responsabilidade |
-|---|---|---|
-| `apps/bot` | discord.js · shoukaku | Conexão com Discord, slash commands, reprodução via Lavalink |
-| `apps/api` | Fastify · Zod · Socket.IO | API REST + WebSocket consumidos pelo dashboard |
-| `apps/dashboard` | Next.js 15 · Tailwind · shadcn/ui | Painel web de controle |
+| App              | Stack                             | Responsabilidade                                             |
+| ---------------- | --------------------------------- | ------------------------------------------------------------ |
+| `apps/bot`       | discord.js · shoukaku             | Conexão com Discord, slash commands, reprodução via Lavalink |
+| `apps/api`       | Fastify · Zod · Socket.IO         | API REST + WebSocket consumidos pelo dashboard               |
+| `apps/dashboard` | Next.js 15 · Tailwind · shadcn/ui | Painel web de controle                                       |
 
-| Package | Propósito |
-|---|---|
-| `@wesbot/shared` | Schemas Zod, enums, contratos de eventos (fonte da verdade entre bot/api/dashboard) |
-| `@wesbot/database` | Prisma schema + client singleton |
-| `@wesbot/ui` | Componentes React reutilizáveis (populado a partir da Fase 5) |
-| `@wesbot/config` | Presets compartilhados (tsconfig, eslint, tailwind) |
+| Package            | Propósito                                                                           |
+| ------------------ | ----------------------------------------------------------------------------------- |
+| `@wesbot/shared`   | Schemas Zod, enums, contratos de eventos (fonte da verdade entre bot/api/dashboard) |
+| `@wesbot/database` | Prisma schema + client singleton                                                    |
+| `@wesbot/ui`       | Componentes React reutilizáveis (populado a partir da Fase 5)                       |
+| `@wesbot/config`   | Presets compartilhados (tsconfig, eslint, tailwind)                                 |
 
 Detalhes arquiteturais em [`ARCHITECTURE.md`](./ARCHITECTURE.md). Roadmap em [`PLAN.md`](./PLAN.md).
 
@@ -125,17 +125,17 @@ Lista completa em [`docs/features.md`](./docs/features.md). Progresso em fases:
 
 ## 🧪 Scripts
 
-| Comando | Descrição |
-|---|---|
-| `pnpm dev` | Bot + API + Dashboard em modo watch |
-| `pnpm build` | Build de produção de todos os apps |
-| `pnpm lint` | ESLint em todo o monorepo |
-| `pnpm typecheck` | TypeScript strict em todo o monorepo |
-| `pnpm test` | Vitest em todos os packages |
-| `pnpm format` | Prettier em todos os arquivos |
-| `pnpm docker:up` | Sobe Postgres + Redis + Lavalink |
-| `pnpm docker:down` | Desliga infra |
-| `pnpm db:studio` | Prisma Studio (GUI do banco) |
+| Comando            | Descrição                            |
+| ------------------ | ------------------------------------ |
+| `pnpm dev`         | Bot + API + Dashboard em modo watch  |
+| `pnpm build`       | Build de produção de todos os apps   |
+| `pnpm lint`        | ESLint em todo o monorepo            |
+| `pnpm typecheck`   | TypeScript strict em todo o monorepo |
+| `pnpm test`        | Vitest em todos os packages          |
+| `pnpm format`      | Prettier em todos os arquivos        |
+| `pnpm docker:up`   | Sobe Postgres + Redis + Lavalink     |
+| `pnpm docker:down` | Desliga infra                        |
+| `pnpm db:studio`   | Prisma Studio (GUI do banco)         |
 
 ---
 

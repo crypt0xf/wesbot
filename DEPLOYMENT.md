@@ -6,13 +6,13 @@
 
 ### 1.1. Pré-requisitos
 
-| Software | Versão | Obs |
-|---|---|---|
-| Windows 10/11 | — | — |
-| Node.js | 20.18+ | [nodejs.org](https://nodejs.org/) ou `nvm-windows` |
-| pnpm | 9.15+ | `npm i -g pnpm@9.15.0` |
-| Docker Desktop | last | WSL2 backend recomendado |
-| Git | last | para hooks |
+| Software       | Versão | Obs                                                |
+| -------------- | ------ | -------------------------------------------------- |
+| Windows 10/11  | —      | —                                                  |
+| Node.js        | 20.18+ | [nodejs.org](https://nodejs.org/) ou `nvm-windows` |
+| pnpm           | 9.15+  | `npm i -g pnpm@9.15.0`                             |
+| Docker Desktop | last   | WSL2 backend recomendado                           |
+| Git            | last   | para hooks                                         |
 
 ### 1.2. Setup único
 
@@ -61,14 +61,14 @@ nssm start wesbot-bot
 
 ### 1.4. Portas expostas
 
-| Serviço | Porta | Uso |
-|---|---|---|
-| Postgres | 5432 | banco (Docker) |
-| Redis | 6379 | cache/fila (Docker) |
-| Lavalink | 2333 | áudio (Docker) |
-| Bot | — | processo Node, não escuta |
-| API | 4000 | HTTP + WS |
-| Dashboard | 3000 | Next.js |
+| Serviço   | Porta | Uso                       |
+| --------- | ----- | ------------------------- |
+| Postgres  | 5432  | banco (Docker)            |
+| Redis     | 6379  | cache/fila (Docker)       |
+| Lavalink  | 2333  | áudio (Docker)            |
+| Bot       | —     | processo Node, não escuta |
+| API       | 4000  | HTTP + WS                 |
+| Dashboard | 3000  | Next.js                   |
 
 Para acesso externo (amigos de fora da LAN), use **Cloudflare Tunnel** ou **Tailscale Funnel**:
 

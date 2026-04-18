@@ -6,9 +6,7 @@ import { z } from 'zod';
  */
 export const baseEnvSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
-  LOG_LEVEL: z
-    .enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent'])
-    .default('info'),
+  LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
 });
 
 export const discordEnvSchema = z.object({
@@ -40,6 +38,11 @@ export const lavalinkEnvSchema = z.object({
     .transform((v) => v === 'true'),
 });
 
+export const botEnvSchema = z.object({
+  BOT_HEALTH_HOST: z.string().default('127.0.0.1'),
+  BOT_HEALTH_PORT: z.coerce.number().int().positive().max(65535).default(4100),
+});
+
 export const apiEnvSchema = z.object({
   API_HOST: z.string().default('0.0.0.0'),
   API_PORT: z.coerce.number().int().positive().max(65535).default(4000),
@@ -47,7 +50,12 @@ export const apiEnvSchema = z.object({
   API_CORS_ORIGINS: z
     .string()
     .default('http://localhost:3000')
-    .transform((s) => s.split(',').map((o) => o.trim()).filter(Boolean)),
+    .transform((s) =>
+      s
+        .split(',')
+        .map((o) => o.trim())
+        .filter(Boolean),
+    ),
 });
 
 export type BaseEnv = z.infer<typeof baseEnvSchema>;
@@ -55,6 +63,7 @@ export type DiscordEnv = z.infer<typeof discordEnvSchema>;
 export type DatabaseEnv = z.infer<typeof databaseEnvSchema>;
 export type RedisEnv = z.infer<typeof redisEnvSchema>;
 export type LavalinkEnv = z.infer<typeof lavalinkEnvSchema>;
+export type BotEnv = z.infer<typeof botEnvSchema>;
 export type ApiEnv = z.infer<typeof apiEnvSchema>;
 
 /**

@@ -1,56 +1,54 @@
-import { Client, Events, GatewayIntentBits, Partials } from 'discord.js';
-
+import { createClient } from './client';
+import { createContainer } from './container';
 import { env } from './env';
+import { registerCommands } from './infrastructure/command-registrar';
+import { startHealthServer } from './infrastructure/health-server';
+import { i18n } from './infrastructure/i18n';
 import { logger } from './logger';
-
-/**
- * Phase 0 stub. Connects to Discord, sets presence, logs ready state.
- * Slash commands, music, moderation are added in later phases.
- */
-
-const client = new Client({
-  intents: [
-    GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMembers,
-    GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.GuildVoiceStates,
-    GatewayIntentBits.MessageContent,
-    GatewayIntentBits.GuildMessageReactions,
-  ],
-  partials: [Partials.Message, Partials.Channel, Partials.Reaction, Partials.GuildMember],
-});
-
-client.once(Events.ClientReady, (c) => {
-  logger.info(
-    { user: c.user.tag, guilds: c.guilds.cache.size, nodeEnv: env.NODE_ENV },
-    'bot ready',
-  );
-  void c.user.setPresence({
-    activities: [{ name: 'wesbot v0 · scaffolding', type: 3 /* Watching */ }],
-    status: 'online',
-  });
-});
-
-client.on(Events.Error, (err) => {
-  logger.error({ err }, 'client error');
-});
-
-client.on(Events.Warn, (msg) => {
-  logger.warn(msg);
-});
+import { buildCommandRegistry, commands } from './presentation/commands/index';
+import { registerEvents } from './presentation/events/index';
 
 process.on('unhandledRejection', (reason) => {
   logger.error({ reason }, 'unhandled rejection');
 });
 
-process.on('SIGINT', () => {
-  logger.info('SIGINT — shutting down');
-  void client.destroy().finally(() => process.exit(0));
+process.on('uncaughtException', (err) => {
+  logger.fatal({ err }, 'uncaught exception');
+  process.exit(1);
 });
 
-process.on('SIGTERM', () => {
-  logger.info('SIGTERM — shutting down');
-  void client.destroy().finally(() => process.exit(0));
+const client = createClient();
+const registry = buildCommandRegistry(commands);
+const container = createContainer({
+  logger,
+  i18n,
+  client,
+  commands: registry,
+});
+
+registerEvents(client, container, registry);
+
+const healthServer = startHealthServer({
+  host: env.BOT_HEALTH_HOST,
+  port: env.BOT_HEALTH_PORT,
+  container,
+});
+
+await registerCommands(commands, {
+  token: env.DISCORD_TOKEN,
+  clientId: env.DISCORD_CLIENT_ID,
+  devGuildId: env.DISCORD_DEV_GUILD_ID,
+  logger,
 });
 
 await client.login(env.DISCORD_TOKEN);
+
+async function shutdown(signal: string): Promise<void> {
+  logger.info({ signal }, 'shutting down');
+  healthServer.close();
+  await client.destroy();
+  process.exit(0);
+}
+
+process.on('SIGINT', () => void shutdown('SIGINT'));
+process.on('SIGTERM', () => void shutdown('SIGTERM'));

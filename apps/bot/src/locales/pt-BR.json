@@ -1,0 +1,47 @@
+{
+  "common": {
+    "yes": "Sim",
+    "no": "Não",
+    "unknown": "Desconhecido"
+  },
+  "commands": {
+    "ping": {
+      "description": "Mostra a latência do bot com o Discord",
+      "reply": "🏓 Pong! **WebSocket:** {ws}ms · **Round-trip:** {rtt}ms"
+    },
+    "info": {
+      "description": "Mostra informações e estatísticas do bot",
+      "title": "wesbot",
+      "subtitle": "Plataforma Discord — música + gerenciamento",
+      "fields": {
+        "uptime": "Uptime",
+        "guilds": "Servidores",
+        "users": "Usuários",
+        "memory": "Memória",
+        "node": "Node.js",
+        "version": "Versão",
+        "latency": "Latência"
+      },
+      "footerTip": "Use /help para ver todos os comandos disponíveis."
+    },
+    "help": {
+      "description": "Lista todos os comandos disponíveis",
+      "title": "Comandos disponíveis",
+      "emptyState": "Nenhum comando registrado ainda.",
+      "categories": {
+        "general": "Geral",
+        "music": "Música",
+        "moderation": "Moderação",
+        "config": "Configuração",
+        "fun": "Diversão"
+      },
+      "footerTip": "Slash commands são sincronizados automaticamente."
+    }
+  },
+  "errors": {
+    "generic": "❌ Algo deu errado. Já anotei o erro — tente de novo em instantes.",
+    "permission": "🚫 Você não tem permissão para usar este comando.",
+    "notFound": "🔎 Não encontrei o que você pediu.",
+    "validation": "⚠️ Entrada inválida: {message}"
+  }
+}

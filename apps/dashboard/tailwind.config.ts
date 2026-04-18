@@ -5,10 +5,7 @@ import preset from '@wesbot/config/tailwind';
 
 const config: Config = {
   presets: [preset as Config],
-  content: [
-    './src/**/*.{ts,tsx,mdx}',
-    '../../packages/ui/src/**/*.{ts,tsx}',
-  ],
+  content: ['./src/**/*.{ts,tsx,mdx}', '../../packages/ui/src/**/*.{ts,tsx}'],
   plugins: [animate],
 };
 

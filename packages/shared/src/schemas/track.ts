@@ -25,7 +25,11 @@ export const trackSchema = z.object({
   artworkUrl: z.string().url().nullable().optional(),
   isrc: z.string().nullable().optional(),
   source: audioSourceSchema.default('unknown'),
-  requesterId: z.string().regex(/^\d{17,20}$/).nullable().optional(),
+  requesterId: z
+    .string()
+    .regex(/^\d{17,20}$/)
+    .nullable()
+    .optional(),
   /** Lavalink-encoded track (base64). Needed to replay via Lavalink. */
   encoded: z.string().optional(),
 });

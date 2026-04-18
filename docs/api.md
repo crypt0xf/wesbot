@@ -9,10 +9,10 @@
 
 ## Rotas atuais (Fase 0)
 
-| Método | Path | Descrição |
-|---|---|---|
-| GET | `/health` | Liveness probe. Retorna `{ ok: true, service, timestamp }` |
-| GET | `/ready` | Readiness probe. Retorna `{ ok: true }` após dependências subirem (DB, Redis, Lavalink) |
+| Método | Path      | Descrição                                                                               |
+| ------ | --------- | --------------------------------------------------------------------------------------- |
+| GET    | `/health` | Liveness probe. Retorna `{ ok: true, service, timestamp }`                              |
+| GET    | `/ready`  | Readiness probe. Retorna `{ ok: true }` após dependências subirem (DB, Redis, Lavalink) |
 
 ## WebSocket
 
@@ -20,11 +20,11 @@ Namespace primário: `/socket.io` (implementado na Fase 4).
 
 Subscriptions por guild:
 
-| Event | Payload | Direção |
-|---|---|---|
-| `music.state` | `QueueState` | server → client |
+| Event            | Payload                   | Direção                |
+| ---------------- | ------------------------- | ---------------------- |
+| `music.state`    | `QueueState`              | server → client        |
 | `music.position` | `{ guildId, positionMs }` | server → client (5 Hz) |
-| `mod.action` | `ModAction` | server → client |
+| `mod.action`     | `ModAction`               | server → client        |
 
 ## Contratos entre serviços
 

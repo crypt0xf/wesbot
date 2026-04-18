@@ -5,6 +5,7 @@ Lista canônica de features por módulo, marcada por fase. Legenda: ✅ pronto, 
 ## 🎵 Música
 
 ### Reprodução
+
 - ⏳ Play por URL (YouTube, Spotify, Apple Music, Deezer, SoundCloud, Twitch, arquivos diretos) — Fase 2/3
 - ⏳ Play por busca (resultado único + seleção com até 10 resultados) — Fase 2
 - ⏳ Playlists completas das plataformas suportadas — Fase 3
@@ -13,6 +14,7 @@ Lista canônica de features por módulo, marcada por fase. Legenda: ✅ pronto, 
 - ⏳ Replay, Jump para posição N — Fase 2
 
 ### Fila
+
 - ⏳ Adicionar no final / início / posição específica — Fase 2
 - ⏳ Remover por índice ou range — Fase 2
 - ⏳ Reordenar (move X para Y) — Fase 2
@@ -23,6 +25,7 @@ Lista canônica de features por módulo, marcada por fase. Legenda: ✅ pronto, 
 - ⏳ Persistência de fila entre reinícios (Redis) — Fase 3
 
 ### Recursos avançados
+
 - ⏳ Filtros: bassboost (níveis), nightcore, vaporwave, 8D, karaoke, tremolo, vibrato, EQ 15 bandas, pitch, speed — Fase 3
 - ⏳ Autoplay / Radio mode — Fase 3
 - ⏳ 24/7 mode por servidor — Fase 3
@@ -35,6 +38,7 @@ Lista canônica de features por módulo, marcada por fase. Legenda: ✅ pronto, 
 - ⏳ Smart disconnect — Fase 3
 
 ## 🛡️ Moderação
+
 - ⏳ Kick / Ban (tempo opcional) / Unban / Timeout / Warn — Fase 7
 - ⏳ Sistema de warns persistente + auto-ações — Fase 7
 - ⏳ Automod: spam, caps, mentions, links, invites, wordlist (regex), anti-raid — Fase 7
@@ -42,6 +46,7 @@ Lista canônica de features por módulo, marcada por fase. Legenda: ✅ pronto, 
 - ⏳ Ações em lote — Fase 7
 
 ## 🏗️ Gerenciamento de servidor
+
 - ⏳ Editor de canais (criar/renomear/mover/deletar/permissões) — Fase 8
 - ⏳ Editor de roles (criar/editar/reordenar/deletar) — Fase 8
 - ⏳ Permissões granulares canal × role — Fase 8
@@ -49,6 +54,7 @@ Lista canônica de features por módulo, marcada por fase. Legenda: ✅ pronto, 
 - ⏳ Atribuir/remover roles em lote — Fase 8
 
 ## 🤝 Engajamento
+
 - ⏳ Welcome / Leave com template + embed + imagem dinâmica — Fase 9
 - ⏳ Reaction roles / Button roles — Fase 9
 - ⏳ Auto-role (humanos e bots separados) — Fase 9
@@ -58,6 +64,7 @@ Lista canônica de features por módulo, marcada por fase. Legenda: ✅ pronto, 
 - ⏳ Tickets com transcript — Fase 9
 
 ## ⚡ Produtividade
+
 - ⏳ Custom commands com variáveis e embeds — Fase 10
 - ⏳ Tags — Fase 10
 - ⏳ Scheduled messages (cron) — Fase 10
@@ -65,6 +72,7 @@ Lista canônica de features por módulo, marcada por fase. Legenda: ✅ pronto, 
 - ⏳ Audit log enriquecido — Fase 10
 
 ## 🖥️ Dashboard
+
 - ⏳ Landing page — Fase 5
 - ⏳ Login OAuth2 Discord — Fase 4/5
 - ⏳ Server selector — Fase 5

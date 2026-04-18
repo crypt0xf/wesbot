@@ -11,14 +11,14 @@
 
 O bot atual (`main.py` + 2 cogs + logger = ~1.800 LOC) é um tocador de música Python/discord.py razoável, mas não é base para a plataforma descrita no briefing. Estado atual, resumido:
 
-| Área | Atual | Gap p/ objetivo |
-|---|---|---|
-| Áudio | `yt-dlp` + `FFmpegPCMAudio` direto no processo | Requer Lavalink v4; `yt-dlp` já é o principal vetor de bugs do repo (últimos 5 commits são correções de extractor) |
-| Estado | `dict[int, GuildQueue]` em memória | Precisa Postgres + Redis para persistência, multi-instância e dashboard |
-| Interface | Prefixo + slash commands | Precisa componentes interativos (v2) + dashboard web |
-| Backend web | Inexistente | Precisa API + WebSocket + OAuth2 |
-| Observabilidade | Logger ANSI custom | Precisa Pino + métricas + health checks |
-| Testes | Nenhum | Meta: ≥70% cobertura no domínio |
+| Área            | Atual                                          | Gap p/ objetivo                                                                                                    |
+| --------------- | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| Áudio           | `yt-dlp` + `FFmpegPCMAudio` direto no processo | Requer Lavalink v4; `yt-dlp` já é o principal vetor de bugs do repo (últimos 5 commits são correções de extractor) |
+| Estado          | `dict[int, GuildQueue]` em memória             | Precisa Postgres + Redis para persistência, multi-instância e dashboard                                            |
+| Interface       | Prefixo + slash commands                       | Precisa componentes interativos (v2) + dashboard web                                                               |
+| Backend web     | Inexistente                                    | Precisa API + WebSocket + OAuth2                                                                                   |
+| Observabilidade | Logger ANSI custom                             | Precisa Pino + métricas + health checks                                                                            |
+| Testes          | Nenhum                                         | Meta: ≥70% cobertura no domínio                                                                                    |
 
 **Recomendação:** reescrever como monorepo TypeScript (Turborepo + pnpm), com bot em discord.js v14 + Lavalink v4 (shoukaku), API em Fastify, dashboard em Next.js 15 App Router, persistência Prisma/Postgres + Redis. O código Python atual servirá apenas como referência de funcionalidades e UX de mensagens.
 
@@ -70,16 +70,16 @@ Você pediu para eu avaliar criticamente, não apenas confirmar. Aqui vai.
 
 ### 2.1. Critérios ponderados
 
-| Critério | Peso | Python (discord.py + FastAPI) | TypeScript (discord.js + Next.js) |
-|---|---|---|---|
-| Unificação bot ↔ dashboard | Alto | Baixo — duas linguagens, duplicação de types/DTOs via OpenAPI + geradores frágeis | **Alto** — mesma linguagem, types compartilhados via package no monorepo |
-| Qualidade de clientes Lavalink | Alto | `lavalink.py` / `Pomice` — mantidos por 1–2 devs | **`shoukaku` / `lavalink-client`** — mainstream, milhares de bots em prod |
-| Ecossistema web de classe A | Alto | FastAPI é bom, mas precisa de Next/Vite no front, logo duas linguagens | **Next.js 15 (App Router, RSC, Suspense, streaming)** — gold standard |
-| discord.js vs discord.py | Médio | discord.py voltou em 2023 e é estável, mas ecossistema de terceiros é menor | **discord.js** tem mais libs (sharding manager, builders, slash cmd frameworks) |
-| Tempo de desenvolvimento | Médio | Aumenta — context switch de linguagem, serialização manual em todo boundary | **Reduz** — tRPC ou contratos Zod compartilhados |
-| Experiência em prod do time | Desconhecido | — | — |
-| Código atual reaproveitável | Baixo | ~30% (lógica de UX de mensagens, estrutura de embeds) | ~30% (mesma lógica, reescrita) — mesma ordem |
-| Risco de `yt-dlp` quebrar | — | Igual em ambos (mesmo Lavalink no meio) | Igual |
+| Critério                       | Peso         | Python (discord.py + FastAPI)                                                     | TypeScript (discord.js + Next.js)                                               |
+| ------------------------------ | ------------ | --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| Unificação bot ↔ dashboard     | Alto         | Baixo — duas linguagens, duplicação de types/DTOs via OpenAPI + geradores frágeis | **Alto** — mesma linguagem, types compartilhados via package no monorepo        |
+| Qualidade de clientes Lavalink | Alto         | `lavalink.py` / `Pomice` — mantidos por 1–2 devs                                  | **`shoukaku` / `lavalink-client`** — mainstream, milhares de bots em prod       |
+| Ecossistema web de classe A    | Alto         | FastAPI é bom, mas precisa de Next/Vite no front, logo duas linguagens            | **Next.js 15 (App Router, RSC, Suspense, streaming)** — gold standard           |
+| discord.js vs discord.py       | Médio        | discord.py voltou em 2023 e é estável, mas ecossistema de terceiros é menor       | **discord.js** tem mais libs (sharding manager, builders, slash cmd frameworks) |
+| Tempo de desenvolvimento       | Médio        | Aumenta — context switch de linguagem, serialização manual em todo boundary       | **Reduz** — tRPC ou contratos Zod compartilhados                                |
+| Experiência em prod do time    | Desconhecido | —                                                                                 | —                                                                               |
+| Código atual reaproveitável    | Baixo        | ~30% (lógica de UX de mensagens, estrutura de embeds)                             | ~30% (mesma lógica, reescrita) — mesma ordem                                    |
+| Risco de `yt-dlp` quebrar      | —            | Igual em ambos (mesmo Lavalink no meio)                                           | Igual                                                                           |
 
 ### 2.2. Contrapontos honestos a favor de Python
 
@@ -90,6 +90,7 @@ Você pediu para eu avaliar criticamente, não apenas confirmar. Aqui vai.
 ### 2.3. Veredito
 
 **TypeScript. Não por ser melhor linguagem, mas porque o produto descrito tem 50% do peso no front-end**, e ter front-end TS + back-end Python obrigaria:
+
 - Duplicar tipos (DTOs, enums, schemas de validação) — ou adicionar pipeline de codegen OpenAPI, o que adiciona uma categoria inteira de bugs.
 - Dois pipelines de CI, dois formatters, dois linters, dois gerenciadores de dependência.
 - WebSocket com dois protocolos mentais (Python `asyncio` → Node `ws`).
@@ -229,20 +230,20 @@ wesbot/
 
 Cada fase é testável isoladamente e termina com um commit/tag. Estimativas são ranges honestos de tempo ativo (não calendar time); assumo trabalho focado.
 
-| # | Fase | Entrega | Estimativa |
-|---|---|---|---|
-| **0** | Scaffolding + infra | Monorepo pnpm/Turbo, configs, docker-compose sobe Postgres + Redis + Lavalink vazio, CI verde (lint + typecheck + build) | 0.5–1 dia |
-| **1** | Bot fundamentos | discord.js conectado, sharding manager, logger Pino, DI, error boundary, comandos `/ping` `/info`, health check, Zod nas bordas | 1–2 dias |
-| **2** | Música core (Lavalink) | shoukaku integrado, `/play` `/pause` `/resume` `/skip` `/stop` `/seek` `/volume` `/queue` `/loop`, Now Playing embed com botões (Components v2), YouTube + SoundCloud via plugin youtube-source/LavaSrc | 2–3 dias |
-| **3** | Música avançada | Spotify/Apple/Deezer via LavaSrc, filtros (bassboost, nightcore, 8D, EQ 15 bandas), autoplay/radio, 24/7, vote-skip, DJ role, playlists salvas (DB), lyrics (lrclib + Genius fallback), smart disconnect, persistência de fila em Redis | 2–3 dias |
-| **4** | DB + API backbone | Prisma migrations, Fastify com Zod, Discord OAuth2 (NextAuth v5), guards de permissão, rate limit Redis, audit log interno, WS gateway | 1–2 dias |
-| **5** | Dashboard base | Next.js 15, Tailwind + shadcn, design tokens, tema claro/escuro, landing, login, server selector, layout com sidebar persistente, cmd palette (Cmd+K), página de overview | 2–3 dias |
-| **6** | Dashboard música | Player persistente (bottom bar), fila drag-and-drop (dnd-kit), controles, filtros com sliders, gerenciador de playlists, real-time via WS | 2 dias |
-| **7** | Moderação | Kick/ban/timeout/unban/warn, sistema de warns com auto-ações, automod (spam, caps, mentions, links, invites, wordlist regex, anti-raid), mod logs com filtros | 2–3 dias |
-| **8** | Gerenciamento de servidor | Editor de canais, roles, permissões granulares; lista de membros com filtros + ações em lote | 2–3 dias |
-| **9** | Engajamento | Welcome/leave com preview live + geração dinâmica de imagem (sharp), reaction/button roles, auto-role, sistema de níveis/XP com card de rank, giveaways, polls, tickets com transcript | 3–4 dias |
-| **10** | Produtividade | Custom commands, tags, scheduled messages (BullMQ + cron), embed builder WYSIWYG, audit log enriquecido | 2 dias |
-| **11** | Polish + QA | i18n (pt-BR default + en-US), next-intl, discord.js localizations, otimização Lighthouse, Playwright E2E (login → tocar música → banir usuário), cobertura ≥70% no domínio, docs completas, CHANGELOG | 2–3 dias |
+| #      | Fase                      | Entrega                                                                                                                                                                                                                                 | Estimativa |
+| ------ | ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| **0**  | Scaffolding + infra       | Monorepo pnpm/Turbo, configs, docker-compose sobe Postgres + Redis + Lavalink vazio, CI verde (lint + typecheck + build)                                                                                                                | 0.5–1 dia  |
+| **1**  | Bot fundamentos           | discord.js conectado, sharding manager, logger Pino, DI, error boundary, comandos `/ping` `/info`, health check, Zod nas bordas                                                                                                         | 1–2 dias   |
+| **2**  | Música core (Lavalink)    | shoukaku integrado, `/play` `/pause` `/resume` `/skip` `/stop` `/seek` `/volume` `/queue` `/loop`, Now Playing embed com botões (Components v2), YouTube + SoundCloud via plugin youtube-source/LavaSrc                                 | 2–3 dias   |
+| **3**  | Música avançada           | Spotify/Apple/Deezer via LavaSrc, filtros (bassboost, nightcore, 8D, EQ 15 bandas), autoplay/radio, 24/7, vote-skip, DJ role, playlists salvas (DB), lyrics (lrclib + Genius fallback), smart disconnect, persistência de fila em Redis | 2–3 dias   |
+| **4**  | DB + API backbone         | Prisma migrations, Fastify com Zod, Discord OAuth2 (NextAuth v5), guards de permissão, rate limit Redis, audit log interno, WS gateway                                                                                                  | 1–2 dias   |
+| **5**  | Dashboard base            | Next.js 15, Tailwind + shadcn, design tokens, tema claro/escuro, landing, login, server selector, layout com sidebar persistente, cmd palette (Cmd+K), página de overview                                                               | 2–3 dias   |
+| **6**  | Dashboard música          | Player persistente (bottom bar), fila drag-and-drop (dnd-kit), controles, filtros com sliders, gerenciador de playlists, real-time via WS                                                                                               | 2 dias     |
+| **7**  | Moderação                 | Kick/ban/timeout/unban/warn, sistema de warns com auto-ações, automod (spam, caps, mentions, links, invites, wordlist regex, anti-raid), mod logs com filtros                                                                           | 2–3 dias   |
+| **8**  | Gerenciamento de servidor | Editor de canais, roles, permissões granulares; lista de membros com filtros + ações em lote                                                                                                                                            | 2–3 dias   |
+| **9**  | Engajamento               | Welcome/leave com preview live + geração dinâmica de imagem (sharp), reaction/button roles, auto-role, sistema de níveis/XP com card de rank, giveaways, polls, tickets com transcript                                                  | 3–4 dias   |
+| **10** | Produtividade             | Custom commands, tags, scheduled messages (BullMQ + cron), embed builder WYSIWYG, audit log enriquecido                                                                                                                                 | 2 dias     |
+| **11** | Polish + QA               | i18n (pt-BR default + en-US), next-intl, discord.js localizations, otimização Lighthouse, Playwright E2E (login → tocar música → banir usuário), cobertura ≥70% no domínio, docs completas, CHANGELOG                                   | 2–3 dias   |
 
 **Total honesto:** 22–32 dias de trabalho focado. Se quiser acelerar, cortamos Fase 10 parcialmente (tags + scheduled podem ir depois) e entregamos o produto em ~18 dias com "v1.1" planejada.
 
@@ -255,15 +256,15 @@ Cada fase é testável isoladamente e termina com um commit/tag. Estimativas sã
 
 ## 6. Riscos conhecidos e mitigação
 
-| Risco | Probabilidade | Impacto | Mitigação |
-|---|---|---|---|
-| Lavalink + youtube-source quebra com mudança do YouTube | Média | Alto | Fixar versão; script de smoke test no CI que toca 5 URLs conhecidas; comunidade Lavalink atualiza rápido |
-| Spotify API mudar tier grátis | Baixa | Médio | LavaSrc usa Client Credentials (grátis indefinido pela política atual); se mudar, fallback para busca YT via ISRC |
-| Discord rate limit em bots grandes | Média | Alto | discord.js já gerencia; sharding desde o início previne |
-| Latência WS dashboard↔API↔bot | Baixa | Médio | Redis pub/sub é sub-ms em localhost; em prod exigir Redis na mesma VPC |
-| OAuth2 tokens vazando | Baixa | Crítico | Tokens só server-side, `httpOnly`/`sameSite=lax`/`secure`, rotação e revogação |
-| Geração de imagens (welcome card, rank) travar event loop | Média | Médio | Worker thread dedicado com `sharp`; fallback para imagem estática |
-| Escopo da Fase 9 crescer | Alta | Médio | Definir "v1" mínimo (welcome, reaction roles, levels, tickets) e empurrar (giveaways complexos, polls com ranked-choice) para v1.1 se necessário |
+| Risco                                                     | Probabilidade | Impacto | Mitigação                                                                                                                                        |
+| --------------------------------------------------------- | ------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Lavalink + youtube-source quebra com mudança do YouTube   | Média         | Alto    | Fixar versão; script de smoke test no CI que toca 5 URLs conhecidas; comunidade Lavalink atualiza rápido                                         |
+| Spotify API mudar tier grátis                             | Baixa         | Médio   | LavaSrc usa Client Credentials (grátis indefinido pela política atual); se mudar, fallback para busca YT via ISRC                                |
+| Discord rate limit em bots grandes                        | Média         | Alto    | discord.js já gerencia; sharding desde o início previne                                                                                          |
+| Latência WS dashboard↔API↔bot                             | Baixa         | Médio   | Redis pub/sub é sub-ms em localhost; em prod exigir Redis na mesma VPC                                                                           |
+| OAuth2 tokens vazando                                     | Baixa         | Crítico | Tokens só server-side, `httpOnly`/`sameSite=lax`/`secure`, rotação e revogação                                                                   |
+| Geração de imagens (welcome card, rank) travar event loop | Média         | Médio   | Worker thread dedicado com `sharp`; fallback para imagem estática                                                                                |
+| Escopo da Fase 9 crescer                                  | Alta          | Médio   | Definir "v1" mínimo (welcome, reaction roles, levels, tickets) e empurrar (giveaways complexos, polls com ranked-choice) para v1.1 se necessário |
 
 ---
 

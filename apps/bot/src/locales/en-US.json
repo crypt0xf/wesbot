@@ -1,0 +1,47 @@
+{
+  "common": {
+    "yes": "Yes",
+    "no": "No",
+    "unknown": "Unknown"
+  },
+  "commands": {
+    "ping": {
+      "description": "Show the bot's latency to Discord",
+      "reply": "🏓 Pong! **WebSocket:** {ws}ms · **Round-trip:** {rtt}ms"
+    },
+    "info": {
+      "description": "Show bot info and stats",
+      "title": "wesbot",
+      "subtitle": "Discord platform — music + management",
+      "fields": {
+        "uptime": "Uptime",
+        "guilds": "Guilds",
+        "users": "Users",
+        "memory": "Memory",
+        "node": "Node.js",
+        "version": "Version",
+        "latency": "Latency"
+      },
+      "footerTip": "Use /help to see every available command."
+    },
+    "help": {
+      "description": "List every available command",
+      "title": "Available commands",
+      "emptyState": "No commands registered yet.",
+      "categories": {
+        "general": "General",
+        "music": "Music",
+        "moderation": "Moderation",
+        "config": "Configuration",
+        "fun": "Fun"
+      },
+      "footerTip": "Slash commands sync automatically."
+    }
+  },
+  "errors": {
+    "generic": "❌ Something went wrong. I logged the error — try again in a moment.",
+    "permission": "🚫 You don't have permission to run this command.",
+    "notFound": "🔎 Couldn't find what you asked for.",
+    "validation": "⚠️ Invalid input: {message}"
+  }
+}
