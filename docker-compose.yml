@@ -48,7 +48,7 @@ services:
       LAVALINK_SERVER_PASSWORD: youshallnotpass
     volumes:
       - ./docker/lavalink/application.yml:/opt/Lavalink/application.yml:ro
-      - lavalink_plugins:/opt/Lavalink/plugins
+      - ./docker/lavalink/plugins:/opt/Lavalink/plugins
     ports:
       - '2333:2333'
     healthcheck:
@@ -65,4 +65,3 @@ services:
 volumes:
   postgres_data:
   redis_data:
-  lavalink_plugins:
