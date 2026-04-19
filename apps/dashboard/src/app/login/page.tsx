@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 
 import { auth } from '../../auth';
+
 import { LoginButton } from './login-button';
 
 export const metadata: Metadata = { title: 'Entrar' };

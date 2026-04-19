@@ -1,10 +1,9 @@
-import type { Metadata, Viewport } from 'next';
+import { cn } from '@wesbot/ui';
 import { GeistMono } from 'geist/font/mono';
 import { GeistSans } from 'geist/font/sans';
+import type { Metadata, Viewport } from 'next';
 import { SessionProvider } from 'next-auth/react';
 import { ThemeProvider } from 'next-themes';
-
-import { cn } from '@wesbot/ui';
 
 import './globals.css';
 
