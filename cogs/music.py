@@ -12,11 +12,14 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
+import random
+import shlex
 import subprocess
+import time
 from abc import ABC, abstractmethod
 from collections import deque
 from dataclasses import dataclass, field
-from typing import Any, Deque, Optional
+from typing import Any, Deque, List, Optional
 
 import discord
 import yt_dlp
@@ -93,6 +96,16 @@ def fmt_seconds(seconds: int) -> str:
     return f"{mins:02d}:{secs:02d}"
 
 
+def build_progress_bar(position: int, duration: int, width: int = 18) -> str:
+    """Constrói uma barra de progresso visual para exibir a posição na faixa."""
+    if duration <= 0:
+        return f"`{fmt_seconds(position)}`"
+    ratio = min(position / duration, 1.0)
+    filled = int(ratio * width)
+    bar = "▬" * filled + "🔘" + "─" * (width - filled)
+    return f"{bar}\n`{fmt_seconds(position)} / {fmt_seconds(duration)}`"
+
+
 # ---------------------------------------------------------------------------
 # Modelos de dados
 # ---------------------------------------------------------------------------
@@ -107,6 +120,7 @@ class Track:
     thumbnail: Optional[str] = None
     uploader: Optional[str] = None
     requester: Optional[discord.Member] = None
+    http_headers: dict = field(default_factory=dict)  # Headers HTTP exigidos pelo CDN (ex: TikTok)
 
     @property
     def duration_fmt(self) -> str:
@@ -125,11 +139,18 @@ class GuildQueue:
     tracks: Deque[Track] = field(default_factory=deque)
     current: Optional[Track] = None
     loop: bool = False
+    loop_queue: bool = False           # Loop da fila completa (mutuamente exclusivo com loop)
     volume: float = 1.0
     voice_client: Optional[discord.VoiceClient] = None
     text_channel: Optional[discord.TextChannel] = None
-    seek_offset: int = 0          # Segundos para passar ao FFmpeg via -ss
-    is_seeking: bool = False      # Suprime requeue do loop durante seek
+    seek_offset: int = 0              # Segundos para passar ao FFmpeg via -ss
+    is_seeking: bool = False          # Suprime requeue do loop durante seek
+    # Rastreamento de posição
+    start_time: Optional[float] = None    # time.time() quando a faixa atual iniciou
+    pause_start: Optional[float] = None   # time.time() quando pausou
+    paused_duration: float = 0.0          # Total de segundos em pausa na faixa atual
+    # Histórico
+    history: List[Track] = field(default_factory=list)  # Últimas faixas reproduzidas (máx 20)
 
 
 # ---------------------------------------------------------------------------
@@ -183,6 +204,7 @@ class YtDlpProvider(MusicProvider):
             thumbnail=data.get("thumbnail"),
             uploader=data.get("uploader"),
             requester=requester,
+            http_headers=data.get("http_headers", {}),
         )
 
     async def search(
@@ -223,19 +245,35 @@ class MusicPlayer:
     # ------------------------------------------------------------------
     def _after_playing(self, error: Optional[Exception]) -> None:
         """Callback chamado pelo discord.py quando uma faixa termina."""
-        if error:
-            logger.error("Erro de reprodução: %s", error)
-
         vc = self._q.voice_client
         if vc is None:
             return
 
+        if error:
+            logger.error("Erro de reprodução: %s", error)
+            if self._q.text_channel:
+                coro = self._q.text_channel.send(
+                    f"❌ Erro ao reproduzir `{self._q.current.title if self._q.current else 'faixa'}`: "
+                    f"`{type(error).__name__}: {error}`"
+                )
+                asyncio.run_coroutine_threadsafe(coro, vc.loop)
+
         if self._q.is_seeking:
             # Seek em andamento: o requeue já foi feito em seek(); não duplicar.
             self._q.is_seeking = False
-        elif self._q.loop and self._q.current:
-            # Se loop ativo, recoloca a faixa atual no início da fila
-            self._q.tracks.appendleft(self._q.current)
+        else:
+            # Adiciona ao histórico antes de descartar
+            if self._q.current:
+                self._q.history.append(self._q.current)
+                if len(self._q.history) > 20:
+                    self._q.history.pop(0)
+
+            if self._q.loop and self._q.current:
+                # Loop de faixa: recoloca no início da fila
+                self._q.tracks.appendleft(self._q.current)
+            elif self._q.loop_queue and self._q.current:
+                # Loop de fila: recoloca no final da fila
+                self._q.tracks.append(self._q.current)
 
         coro = self._play_next()
         asyncio.run_coroutine_threadsafe(coro, vc.loop)
@@ -244,6 +282,7 @@ class MusicPlayer:
         """Pega a próxima faixa da fila e inicia a reprodução."""
         if not self._q.tracks:
             self._q.current = None
+            self._q.start_time = None
             if self._q.text_channel:
                 await self._q.text_channel.send(
                     "✅ A fila acabou. Use `!tocar` para adicionar mais músicas."
@@ -256,18 +295,73 @@ class MusicPlayer:
         seek_offset = self._q.seek_offset
         self._q.seek_offset = 0
 
-        before_options = (
-            f"{FFMPEG_BEFORE_OPTIONS} -ss {seek_offset}"
-            if seek_offset > 0
-            else FFMPEG_BEFORE_OPTIONS
-        )
+        # Inicializa rastreamento de posição (ajustado pelo offset do seek)
+        self._q.start_time = time.time() - seek_offset
+        self._q.paused_duration = 0.0
+        self._q.pause_start = None
 
-        source = discord.FFmpegPCMAudio(
-            track.url,
-            before_options=before_options,
-            options=FFMPEG_OPTIONS,
-            stderr=subprocess.DEVNULL,
-        )
+        # TikTok exige Referer + User-Agent específicos para acessar o CDN.
+        # Passar \r\n real em argumentos subprocess no Windows é instável,
+        # então usamos yt-dlp como subprocesso fazendo pipe direto ao FFmpeg —
+        # o yt-dlp cuida de toda autenticação (headers, cookies) internamente.
+        use_pipe = "tiktok.com" in track.webpage_url.lower()
+
+        if use_pipe:
+            ytdlp_args = [
+                "yt-dlp", "--quiet", "--no-playlist",
+                "--format", "bestaudio/best",
+                "--output", "-",
+            ]
+            if _COOKIES_FILE:
+                ytdlp_args += ["--cookies", _COOKIES_FILE]
+            elif _COOKIES_BROWSER:
+                ytdlp_args += ["--cookies-from-browser", _COOKIES_BROWSER]
+            ytdlp_args.append(track.webpage_url)
+
+            logger.debug("TikTok pipe: yt-dlp → FFmpeg stdin, url=%s", track.webpage_url)
+            yt_proc = subprocess.Popen(
+                ytdlp_args,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.DEVNULL,
+            )
+            pipe_options = (
+                f"-ss {seek_offset} {FFMPEG_OPTIONS}" if seek_offset > 0 else FFMPEG_OPTIONS
+            )
+            source = discord.FFmpegPCMAudio(
+                yt_proc.stdout,
+                pipe=True,
+                options=pipe_options,
+                stderr=subprocess.PIPE,
+            )
+        else:
+            # Sites normais: URL pré-extraída pelo yt-dlp, passada direto ao FFmpeg
+            extra_before = ""
+            if track.http_headers:
+                ua = (
+                    track.http_headers.get("User-Agent")
+                    or track.http_headers.get("user-agent")
+                    or ""
+                )
+                if ua:
+                    extra_before = f"-user_agent {shlex.quote(ua)} "
+
+            base_options = f"{extra_before}{FFMPEG_BEFORE_OPTIONS}"
+            before_options = (
+                f"{base_options} -ss {seek_offset}"
+                if seek_offset > 0
+                else base_options
+            )
+
+            logger.debug(
+                "FFmpeg direto → url=%s",
+                track.url[:80] if track.url else "VAZIO",
+            )
+            source = discord.FFmpegPCMAudio(
+                track.url,
+                before_options=before_options,
+                options=FFMPEG_OPTIONS,
+                stderr=subprocess.PIPE,
+            )
         volume_source = discord.PCMVolumeTransformer(source, volume=self._q.volume)
 
         if self._q.voice_client and self._q.voice_client.is_connected():
@@ -277,7 +371,9 @@ class MusicPlayer:
             embed = self._build_now_playing_embed(track)
             await self._q.text_channel.send(embed=embed)
 
-    def _build_now_playing_embed(self, track: Track) -> discord.Embed:
+    def _build_now_playing_embed(
+        self, track: Track, position: Optional[int] = None
+    ) -> discord.Embed:
         embed = discord.Embed(
             title="🎵 Tocando Agora",
             description=f"[{track.title}]({track.webpage_url})",
@@ -285,7 +381,14 @@ class MusicPlayer:
         )
         if track.thumbnail:
             embed.set_thumbnail(url=track.thumbnail)
-        embed.add_field(name="Duração", value=track.duration_fmt, inline=True)
+
+        # Barra de progresso (apenas no !tocando, não no auto-embed ao iniciar)
+        if position is not None:
+            bar = build_progress_bar(position, track.duration)
+            embed.add_field(name="Progresso", value=bar, inline=False)
+        else:
+            embed.add_field(name="Duração", value=track.duration_fmt, inline=True)
+
         if track.uploader:
             embed.add_field(name="Canal", value=track.uploader, inline=True)
         if track.requester:
@@ -294,12 +397,36 @@ class MusicPlayer:
                 value=track.requester.display_name,
                 inline=True,
             )
-        embed.set_footer(text="wesbot · Developed by crypt0xf")
+
+        # Indicadores de estado
+        status_parts = []
+        if self._q.loop:
+            status_parts.append("🔁 Loop de faixa")
+        if self._q.loop_queue:
+            status_parts.append("🔁 Loop de fila")
+        if self._q.voice_client and self._q.voice_client.is_paused():
+            status_parts.append("⏸️ Pausado")
+
+        footer_text = "wesbot · Developed by crypt0xf"
+        if status_parts:
+            footer_text = " · ".join(status_parts) + " · " + footer_text
+        embed.set_footer(text=footer_text)
         return embed
 
     # ------------------------------------------------------------------
     # API pública
     # ------------------------------------------------------------------
+    def get_position(self) -> int:
+        """Retorna a posição atual de reprodução em segundos."""
+        gq = self._q
+        if gq.start_time is None:
+            return 0
+        elapsed = time.time() - gq.start_time - gq.paused_duration
+        if gq.pause_start is not None:
+            # Atualmente pausado: subtrai tempo de pausa em andamento
+            elapsed -= (time.time() - gq.pause_start)
+        return max(0, int(elapsed))
+
     async def start(self) -> None:
         """Inicia a reprodução se não estiver tocando."""
         vc = self._q.voice_client
@@ -310,6 +437,7 @@ class MusicPlayer:
         vc = self._q.voice_client
         if vc and vc.is_playing():
             vc.pause()
+            self._q.pause_start = time.time()
             return True
         return False
 
@@ -317,6 +445,9 @@ class MusicPlayer:
         vc = self._q.voice_client
         if vc and vc.is_paused():
             vc.resume()
+            if self._q.pause_start is not None:
+                self._q.paused_duration += time.time() - self._q.pause_start
+                self._q.pause_start = None
             return True
         return False
 
@@ -330,13 +461,23 @@ class MusicPlayer:
     def stop(self) -> None:
         self._q.tracks.clear()
         self._q.current = None
+        self._q.start_time = None
         vc = self._q.voice_client
         if vc:
             vc.stop()
 
     def toggle_loop(self) -> bool:
         self._q.loop = not self._q.loop
+        if self._q.loop:
+            self._q.loop_queue = False  # Mutuamente exclusivo
         return self._q.loop
+
+    def toggle_loop_queue(self) -> bool:
+        """Ativa/desativa o loop da fila completa (mutuamente exclusivo com loop de faixa)."""
+        self._q.loop_queue = not self._q.loop_queue
+        if self._q.loop_queue:
+            self._q.loop = False  # Mutuamente exclusivo
+        return self._q.loop_queue
 
     def set_volume(self, volume: float) -> None:
         """Define o volume no intervalo 0.0–2.0."""
@@ -358,6 +499,31 @@ class MusicPlayer:
         self._q.tracks.appendleft(self._q.current)
         vc.stop()
         return True
+
+    def shuffle_queue(self) -> bool:
+        """Embaralha a fila aleatoriamente. Retorna False se houver menos de 2 músicas."""
+        if len(self._q.tracks) < 2:
+            return False
+        track_list = list(self._q.tracks)
+        random.shuffle(track_list)
+        self._q.tracks = deque(track_list)
+        return True
+
+    def move_track(self, origem: int, destino: int) -> Optional[str]:
+        """
+        Move uma faixa da posição *origem* para *destino* (1-indexado).
+        Retorna o título da faixa movida, ou None se posições inválidas.
+        """
+        size = len(self._q.tracks)
+        if size < 2:
+            return None
+        if not (1 <= origem <= size) or not (1 <= destino <= size):
+            return None
+        track_list = list(self._q.tracks)
+        track = track_list.pop(origem - 1)
+        track_list.insert(destino - 1, track)
+        self._q.tracks = deque(track_list)
+        return track.title
 
 
 # ---------------------------------------------------------------------------
@@ -436,6 +602,11 @@ class MusicCog(commands.Cog, name="Música"):
                         "Configure `YTDL_COOKIES_FILE=./cookies.txt` no `.env` e exporte seus cookies do YouTube. "
                         "Veja o README para instruções."
                     )
+                elif "tiktok" in msg.lower() or "tiktok" in query.lower():
+                    await ctx.send(
+                        "❌ Não foi possível obter o áudio do TikTok.\n"
+                        "O vídeo pode ser privado, ter restrição de região, ou o TikTok bloqueou a requisição."
+                    )
                 elif "cookie" in msg.lower() or "Could not copy" in msg:
                     await ctx.send(
                         "❌ Falha ao ler cookies do navegador (provavelmente está aberto e bloqueando o banco).\n"
@@ -451,6 +622,27 @@ class MusicCog(commands.Cog, name="Música"):
                 logger.error("Erro inesperado ao buscar faixa: %s", exc)
                 await ctx.send(f"❌ Ocorreu um erro: `{exc}`")
                 return
+
+        # Valida que yt-dlp extraiu uma URL de stream real (não a página original)
+        if not track.url or track.url == track.webpage_url:
+            logger.error(
+                "URL de stream inválida para '%s': url=%s webpage_url=%s",
+                track.title,
+                track.url,
+                track.webpage_url,
+            )
+            await ctx.send(
+                f"❌ Não foi possível obter a URL de stream de `{track.title}`.\n"
+                "O site pode não ser suportado ou o yt-dlp precisa ser atualizado."
+            )
+            return
+
+        logger.info(
+            "Stream resolvido: '%s' → %s (headers=%s)",
+            track.title,
+            track.url[:80],
+            list(track.http_headers.keys()),
+        )
 
         gq = self._get_queue(ctx.guild.id)
         gq.tracks.append(track)
@@ -504,9 +696,16 @@ class MusicCog(commands.Cog, name="Música"):
 
     @commands.command(name="loop", aliases=["repetir"])
     async def loop_cmd(self, ctx: commands.Context) -> None:
-        """Ativa ou desativa o loop da música atual."""
+        """Ativa ou desativa o loop da música atual (mutuamente exclusivo com !loopfila)."""
         enabled = self._get_player(ctx.guild.id).toggle_loop()
-        state = "🔁 Loop **ativado**." if enabled else "➡️ Loop **desativado**."
+        state = "🔁 Loop de faixa **ativado**." if enabled else "➡️ Loop de faixa **desativado**."
+        await ctx.send(state)
+
+    @commands.command(name="loopfila", aliases=["queueloop", "lf", "loopqueue"])
+    async def loop_queue_cmd(self, ctx: commands.Context) -> None:
+        """Ativa ou desativa o loop da fila completa (mutuamente exclusivo com !loop)."""
+        enabled = self._get_player(ctx.guild.id).toggle_loop_queue()
+        state = "🔁 Loop de fila **ativado**." if enabled else "➡️ Loop de fila **desativado**."
         await ctx.send(state)
 
     @commands.command(name="fila", aliases=["queue", "q", "f"])
@@ -520,10 +719,19 @@ class MusicCog(commands.Cog, name="Música"):
         )
 
         if gq.current:
-            status = "🔁 " if gq.loop else "🎵 "
+            if gq.loop:
+                status = "🔁 "
+            elif gq.loop_queue:
+                status = "🔄 "
+            else:
+                status = "🎵 "
+            # Mostra posição atual na faixa se disponível
+            player = self._get_player(ctx.guild.id)
+            pos = player.get_position()
+            pos_str = f"`{fmt_seconds(pos)} / {gq.current.duration_fmt}`" if pos > 0 else f"`{gq.current.duration_fmt}`"
             embed.add_field(
                 name=f"{status}Tocando Agora",
-                value=f"[{gq.current.title}]({gq.current.webpage_url}) `{gq.current.duration_fmt}`",
+                value=f"[{gq.current.title}]({gq.current.webpage_url}) {pos_str}",
                 inline=False,
             )
 
@@ -531,6 +739,7 @@ class MusicCog(commands.Cog, name="Música"):
             embed.description = "A fila está vazia."
         else:
             lines = []
+            total_duration = sum(t.duration for t in gq.tracks)
             for idx, track in enumerate(gq.tracks, start=1):
                 lines.append(
                     f"`{idx}.` [{track.title}]({track.webpage_url}) `{track.duration_fmt}`"
@@ -541,22 +750,29 @@ class MusicCog(commands.Cog, name="Música"):
                         lines.append(f"*…e mais {remaining} música(s)*")
                     break
             embed.description = "\n".join(lines)
+            embed.add_field(
+                name="Total na fila",
+                value=f"`{len(gq.tracks)}` música(s) · `{fmt_seconds(total_duration)}`",
+                inline=False,
+            )
 
+        loop_status = "faixa" if gq.loop else ("fila" if gq.loop_queue else "desativado")
         embed.set_footer(
-            text=f"Loop: {'ativado' if gq.loop else 'desativado'} · wesbot · Developed by crypt0xf"
+            text=f"Loop: {loop_status} · wesbot · Developed by crypt0xf"
         )
         await ctx.send(embed=embed)
 
     @commands.command(name="tocando", aliases=["nowplaying", "np", "atual"])
     async def nowplaying_cmd(self, ctx: commands.Context) -> None:
-        """Mostra a música que está tocando agora."""
+        """Mostra a música que está tocando agora com barra de progresso."""
         gq = self._get_queue(ctx.guild.id)
         if not gq.current:
             await ctx.send("⚠️ Nenhuma música está tocando agora.")
             return
 
         player = self._get_player(ctx.guild.id)
-        embed = player._build_now_playing_embed(gq.current)
+        position = player.get_position()
+        embed = player._build_now_playing_embed(gq.current, position=position)
         await ctx.send(embed=embed)
 
     @commands.command(name="volume", aliases=["vol"])
@@ -588,7 +804,7 @@ class MusicCog(commands.Cog, name="Música"):
             return
 
         if self._get_player(ctx.guild.id).seek(seconds):
-            await ctx.send(f"⏩ Pulei para {fmt_seconds(seconds)}.")
+            await ctx.send(f"⏩ Pulei para `{fmt_seconds(seconds)}`.")
         else:
             await ctx.send("⚠️ Nenhuma música está tocando agora.")
 
@@ -620,6 +836,56 @@ class MusicCog(commands.Cog, name="Música"):
             await ctx.send("👋 Desconectado.")
         else:
             await ctx.send("⚠️ Não estou em nenhum canal de voz.")
+
+    @commands.command(name="embaralhar", aliases=["shuffle"])
+    async def shuffle_cmd(self, ctx: commands.Context) -> None:
+        """Embaralha aleatoriamente a ordem das músicas na fila."""
+        if self._get_player(ctx.guild.id).shuffle_queue():
+            await ctx.send("🔀 Fila embaralhada.")
+        else:
+            await ctx.send("⚠️ A fila precisa ter pelo menos 2 músicas para embaralhar.")
+
+    @commands.command(name="mover", aliases=["move", "mv"])
+    async def move_cmd(self, ctx: commands.Context, origem: int, destino: int) -> None:
+        """Move uma música de uma posição para outra na fila. Ex: !mover 3 1"""
+        gq = self._get_queue(ctx.guild.id)
+        size = len(gq.tracks)
+        if size < 2:
+            await ctx.send("⚠️ A fila precisa ter pelo menos 2 músicas para mover.")
+            return
+        if not (1 <= origem <= size) or not (1 <= destino <= size):
+            await ctx.send(f"⚠️ Posições inválidas. A fila tem **{size}** música(s).")
+            return
+        if origem == destino:
+            await ctx.send("⚠️ As posições de origem e destino são iguais.")
+            return
+        title = self._get_player(ctx.guild.id).move_track(origem, destino)
+        if title:
+            await ctx.send(f"↕️ **{title}** movido da posição `{origem}` para `{destino}`.")
+        else:
+            await ctx.send("⚠️ Não foi possível mover a música.")
+
+    @commands.command(name="historico", aliases=["history", "hist"])
+    async def history_cmd(self, ctx: commands.Context) -> None:
+        """Exibe as últimas músicas reproduzidas nesta sessão (máx 10)."""
+        gq = self._get_queue(ctx.guild.id)
+        if not gq.history:
+            await ctx.send("⚠️ Nenhuma música foi reproduzida ainda nesta sessão.")
+            return
+
+        embed = discord.Embed(
+            title="📜 Histórico de Reprodução",
+            color=discord.Color.blurple(),
+        )
+        lines = []
+        for idx, track in enumerate(reversed(gq.history[-10:]), start=1):
+            requester_str = f" — pedido por {track.requester.display_name}" if track.requester else ""
+            lines.append(
+                f"`{idx}.` [{track.title}]({track.webpage_url}) `{track.duration_fmt}`{requester_str}"
+            )
+        embed.description = "\n".join(lines)
+        embed.set_footer(text=f"Total reproduzidas nesta sessão: {len(gq.history)} · wesbot · Developed by crypt0xf")
+        await ctx.send(embed=embed)
 
     @commands.command(name="buscar", aliases=["search", "procurar"])
     async def search_cmd(
@@ -713,10 +979,25 @@ class MusicCog(commands.Cog, name="Música"):
         ctx = await commands.Context.from_interaction(interaction)
         await self.loop_cmd(ctx)
 
-    @app_commands.command(name="tocando", description="Mostra a música que está tocando agora.")
+    @app_commands.command(name="tocando", description="Mostra a música que está tocando agora com progresso.")
     async def nowplaying_slash(self, interaction: discord.Interaction) -> None:
         ctx = await commands.Context.from_interaction(interaction)
         await self.nowplaying_cmd(ctx)
+
+    @app_commands.command(name="embaralhar", description="Embaralha aleatoriamente a fila de músicas.")
+    async def shuffle_slash(self, interaction: discord.Interaction) -> None:
+        ctx = await commands.Context.from_interaction(interaction)
+        await self.shuffle_cmd(ctx)
+
+    @app_commands.command(name="historico", description="Exibe as últimas músicas reproduzidas nesta sessão.")
+    async def history_slash(self, interaction: discord.Interaction) -> None:
+        ctx = await commands.Context.from_interaction(interaction)
+        await self.history_cmd(ctx)
+
+    @app_commands.command(name="loopfila", description="Ativa ou desativa o loop da fila completa.")
+    async def loop_queue_slash(self, interaction: discord.Interaction) -> None:
+        ctx = await commands.Context.from_interaction(interaction)
+        await self.loop_queue_cmd(ctx)
 
     # ------------------------------------------------------------------
     # Listener de estado de voz

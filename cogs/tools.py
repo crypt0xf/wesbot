@@ -266,9 +266,11 @@ class ToolsCog(commands.Cog, name="Ferramentas"):
                 f"`{prefix}continuar` — Continua a reprodução\n"
                 f"`{prefix}pular` — Pula a música atual\n"
                 f"`{prefix}parar` — Para e limpa a fila\n"
-                f"`{prefix}loop` — Ativa/desativa o loop\n"
+                f"`{prefix}seek <tempo>` — Salta para um momento (ex: 1:30)\n"
+                f"`{prefix}loop` — Ativa/desativa o loop de faixa\n"
+                f"`{prefix}loopfila` — Ativa/desativa o loop da fila completa\n"
                 f"`{prefix}volume <0-200>` — Define o volume\n"
-                f"`{prefix}tocando` — Exibe a música atual\n"
+                f"`{prefix}tocando` — Exibe a música atual com progresso\n"
             ),
             inline=False,
         )
@@ -276,10 +278,13 @@ class ToolsCog(commands.Cog, name="Ferramentas"):
         embed.add_field(
             name="📋 Fila",
             value=(
-                f"`{prefix}fila` — Exibe a fila\n"
+                f"`{prefix}fila` — Exibe a fila com posição atual\n"
+                f"`{prefix}embaralhar` — Embaralha a ordem da fila\n"
+                f"`{prefix}mover <de> <para>` — Move uma música na fila\n"
                 f"`{prefix}remover <pos>` — Remove uma música da fila\n"
                 f"`{prefix}limpar` — Limpa a fila\n"
                 f"`{prefix}buscar <termo>` — Busca e escolhe uma música\n"
+                f"`{prefix}historico` — Últimas músicas reproduzidas\n"
             ),
             inline=False,
         )
