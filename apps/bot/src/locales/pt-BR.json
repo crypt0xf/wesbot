@@ -205,6 +205,66 @@
       "queryOption": "Artista e música (opcional)",
       "header": "📝 **{title}** — {artist}",
       "notFound": "Não encontrei a letra dessa música."
+    },
+    "warn": {
+      "description": "Adiciona um aviso a um membro",
+      "userOption": "Membro a avisar",
+      "reasonOption": "Motivo do aviso",
+      "success": "⚠️ **{user}** recebeu um aviso. Total ativo: **{total}**\nMotivo: {reason}"
+    },
+    "unwarn": {
+      "description": "Remove um aviso ativo de um membro",
+      "idOption": "ID do aviso (use /warns para ver)",
+      "success": "✅ Aviso `{id}` removido.",
+      "notFound": "⚠️ Aviso não encontrado ou já removido."
+    },
+    "warns": {
+      "description": "Lista os avisos ativos de um membro",
+      "userOption": "Membro a consultar",
+      "title": "Avisos de {user}",
+      "empty": "Sem avisos ativos.",
+      "entry": "`{id}` — {reason} *(em {date})*"
+    },
+    "kick": {
+      "description": "Expulsa um membro do servidor",
+      "userOption": "Membro a expulsar",
+      "reasonOption": "Motivo da expulsão",
+      "success": "👢 **{user}** foi expulso.\nMotivo: {reason}"
+    },
+    "ban": {
+      "description": "Bane um membro do servidor",
+      "userOption": "Membro a banir",
+      "reasonOption": "Motivo do banimento",
+      "daysOption": "Dias de mensagens a apagar (0-7)",
+      "success": "🔨 **{user}** foi banido.\nMotivo: {reason}"
+    },
+    "unban": {
+      "description": "Remove o banimento de um usuário",
+      "userOption": "ID do usuário a desbanir",
+      "reasonOption": "Motivo do desbanimento",
+      "success": "✅ **{user}** foi desbanido.",
+      "notBanned": "Esse usuário não está banido."
+    },
+    "timeout": {
+      "description": "Silencia um membro por um período",
+      "userOption": "Membro a silenciar",
+      "durationOption": "Duração (ex: 10m, 1h, 1d — máx 28d)",
+      "reasonOption": "Motivo",
+      "success": "🔇 **{user}** silenciado por **{duration}**.\nMotivo: {reason}",
+      "invalidDuration": "⚠️ Duração inválida. Exemplos: `10m`, `1h`, `1d` (máx 28 dias)."
+    },
+    "untimeout": {
+      "description": "Remove o silenciamento de um membro",
+      "userOption": "Membro a liberar",
+      "reasonOption": "Motivo",
+      "success": "🔊 Silenciamento de **{user}** removido."
+    },
+    "purge": {
+      "description": "Apaga mensagens do canal atual",
+      "amountOption": "Quantidade de mensagens (1-100)",
+      "userOption": "Filtrar por autor (opcional)",
+      "success": "🗑️ {count} mensagem(ns) apagada(s).",
+      "noneDeleted": "Nenhuma mensagem foi apagada."
     }
   },
   "music": {

@@ -18,6 +18,7 @@ import authPlugin from './plugins/auth';
 import redisPlugin from './plugins/redis';
 import { authRoutes } from './routes/auth';
 import { guildRoutes } from './routes/guilds';
+import { moderationRoutes } from './routes/moderation';
 import { musicRoutes } from './routes/music';
 
 async function buildServer() {
@@ -55,6 +56,7 @@ async function buildServer() {
 
   authRoutes(app);
   guildRoutes(app, { prisma });
+  moderationRoutes(app, { prisma });
   musicRoutes(app);
 
   // Socket.IO gateway is attached before listen; Redis bridge uses its own async connect

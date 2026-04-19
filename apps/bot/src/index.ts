@@ -1,5 +1,6 @@
 import { prisma } from '@wesbot/database';
 
+import { ModerationService } from './application/moderation/moderation-service';
 import { LyricsService } from './application/music/lyrics-service';
 import { MusicController } from './application/music/music-controller';
 import { PlaylistService } from './application/music/playlist-service';
@@ -48,6 +49,7 @@ const music = new MusicController(shoukaku, logger, persistence, (channel, paylo
 const settings = new GuildConfigService(prisma, logger);
 const playlists = new PlaylistService(prisma, logger);
 const lyrics = new LyricsService(logger);
+const moderation = new ModerationService(prisma);
 const voiceWatcher = new VoiceActivityWatcher(client, music, settings, logger);
 const container = createContainer({
   logger,
@@ -55,6 +57,7 @@ const container = createContainer({
   client,
   commands: registry,
   lyrics,
+  moderation,
   music,
   playlists,
   prisma,

@@ -2,6 +2,7 @@ import type { SlashCommand } from '../../types';
 
 import help from './help';
 import info from './info';
+import { moderationCommands } from './moderation';
 import { musicCommands } from './music';
 import ping from './ping';
 
@@ -10,7 +11,13 @@ import ping from './ping';
  * own file and include it here — the registrar reads from this array and the
  * dispatcher looks up by `data.name`.
  */
-export const commands: readonly SlashCommand[] = [ping, info, help, ...musicCommands];
+export const commands: readonly SlashCommand[] = [
+  ping,
+  info,
+  help,
+  ...musicCommands,
+  ...moderationCommands,
+];
 
 export function buildCommandRegistry(
   list: readonly SlashCommand[] = commands,

@@ -2,6 +2,7 @@ import type { PrismaClient } from '@wesbot/database';
 import type { Client } from 'discord.js';
 import type Redis from 'ioredis';
 
+import type { ModerationService } from './application/moderation/moderation-service';
 import type { LyricsService } from './application/music/lyrics-service';
 import type { MusicController } from './application/music/music-controller';
 import type { PlaylistService } from './application/music/playlist-service';
@@ -23,6 +24,7 @@ export interface Container {
   /** All registered slash commands, keyed by command name. Used by /help. */
   commands: ReadonlyMap<string, SlashCommand>;
   lyrics: LyricsService;
+  moderation: ModerationService;
   music: MusicController;
   playlists: PlaylistService;
   prisma: PrismaClient;

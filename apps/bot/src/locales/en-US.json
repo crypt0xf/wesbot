@@ -205,6 +205,66 @@
       "queryOption": "Artist and song (optional)",
       "header": "📝 **{title}** — {artist}",
       "notFound": "Couldn't find lyrics for that song."
+    },
+    "warn": {
+      "description": "Add a warning to a member",
+      "userOption": "Member to warn",
+      "reasonOption": "Reason for the warning",
+      "success": "⚠️ **{user}** was warned. Active count: **{total}**\nReason: {reason}"
+    },
+    "unwarn": {
+      "description": "Remove an active warning from a member",
+      "idOption": "Warning ID (use /warns to see them)",
+      "success": "✅ Warning `{id}` removed.",
+      "notFound": "⚠️ Warning not found or already removed."
+    },
+    "warns": {
+      "description": "List a member's active warnings",
+      "userOption": "Member to look up",
+      "title": "Warnings for {user}",
+      "empty": "No active warnings.",
+      "entry": "`{id}` — {reason} *(on {date})*"
+    },
+    "kick": {
+      "description": "Kick a member from the server",
+      "userOption": "Member to kick",
+      "reasonOption": "Reason for the kick",
+      "success": "👢 **{user}** was kicked.\nReason: {reason}"
+    },
+    "ban": {
+      "description": "Ban a member from the server",
+      "userOption": "Member to ban",
+      "reasonOption": "Reason for the ban",
+      "daysOption": "Days of messages to delete (0-7)",
+      "success": "🔨 **{user}** was banned.\nReason: {reason}"
+    },
+    "unban": {
+      "description": "Unban a previously banned user",
+      "userOption": "User ID to unban",
+      "reasonOption": "Reason for the unban",
+      "success": "✅ **{user}** was unbanned.",
+      "notBanned": "That user is not currently banned."
+    },
+    "timeout": {
+      "description": "Mute a member for a duration",
+      "userOption": "Member to mute",
+      "durationOption": "Duration (e.g. 10m, 1h, 1d — max 28d)",
+      "reasonOption": "Reason",
+      "success": "🔇 **{user}** muted for **{duration}**.\nReason: {reason}",
+      "invalidDuration": "⚠️ Invalid duration. Examples: `10m`, `1h`, `1d` (max 28 days)."
+    },
+    "untimeout": {
+      "description": "Remove a member's timeout",
+      "userOption": "Member to unmute",
+      "reasonOption": "Reason",
+      "success": "🔊 Timeout removed from **{user}**."
+    },
+    "purge": {
+      "description": "Delete messages from the current channel",
+      "amountOption": "Number of messages (1-100)",
+      "userOption": "Filter by author (optional)",
+      "success": "🗑️ Deleted {count} message(s).",
+      "noneDeleted": "No messages were deleted."
     }
   },
   "music": {
