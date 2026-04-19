@@ -113,10 +113,29 @@ interface ModerationClientProps {
   guildId: string;
 }
 
-type Tab = 'logs' | 'warns' | 'automod';
+type Tab = 'actions' | 'logs' | 'warns' | 'automod';
+
+const ACTION_TYPES = [
+  { value: 'warn', label: 'Avisar', needsDuration: false },
+  { value: 'kick', label: 'Expulsar', needsDuration: false },
+  { value: 'ban', label: 'Banir', needsDuration: false },
+  { value: 'unban', label: 'Desbanir', needsDuration: false },
+  { value: 'timeout', label: 'Silenciar', needsDuration: true },
+  { value: 'untimeout', label: 'Des-silenciar', needsDuration: false },
+] as const;
+
+type ActionType = (typeof ACTION_TYPES)[number]['value'];
 
 export function ModerationClient({ guildId }: ModerationClientProps) {
-  const [tab, setTab] = useState<Tab>('logs');
+  const [tab, setTab] = useState<Tab>('actions');
+
+  // Action form state
+  const [actionType, setActionType] = useState<ActionType>('warn');
+  const [actionTargetId, setActionTargetId] = useState('');
+  const [actionReason, setActionReason] = useState('');
+  const [actionDuration, setActionDuration] = useState('10m');
+  const [actionLoading, setActionLoading] = useState(false);
+  const [actionResult, setActionResult] = useState<{ ok: boolean; msg: string } | null>(null);
 
   // Mod logs state
   const [logs, setLogs] = useState<ModLog[]>([]);
@@ -176,6 +195,37 @@ export function ModerationClient({ guildId }: ModerationClientProps) {
   useEffect(() => {
     if (tab === 'automod') void loadAutomod();
   }, [tab, loadAutomod]);
+
+  async function executeAction() {
+    if (!/^\d{17,20}$/.test(actionTargetId) || !actionReason.trim()) return;
+    setActionLoading(true);
+    setActionResult(null);
+    try {
+      const needsDuration = ACTION_TYPES.find((a) => a.value === actionType)?.needsDuration;
+      const durationMatch = /^(\d+)(s|m|h|d)$/i.exec(actionDuration.trim());
+      const durationUnits: Record<string, number> = { s: 1, m: 60, h: 3600, d: 86400 };
+      const durationSec = durationMatch
+        ? parseInt(durationMatch[1]!, 10) * (durationUnits[durationMatch[2]!.toLowerCase()] ?? 1)
+        : 600;
+
+      await apiFetch(`/api/guilds/${guildId}/mod/actions`, {
+        method: 'POST',
+        body: JSON.stringify({
+          type: actionType,
+          targetUserId: actionTargetId,
+          reason: actionReason.trim(),
+          ...(needsDuration ? { durationSec } : {}),
+        }),
+      });
+      setActionResult({ ok: true, msg: 'Ação enviada ao bot com sucesso.' });
+      setActionTargetId('');
+      setActionReason('');
+    } catch {
+      setActionResult({ ok: false, msg: 'Falha ao executar a ação.' });
+    } finally {
+      setActionLoading(false);
+    }
+  }
 
   async function searchWarns() {
     if (!/^\d{17,20}$/.test(warnUserId)) return;
@@ -261,7 +311,8 @@ export function ModerationClient({ guildId }: ModerationClientProps) {
   }
 
   const tabs: { id: Tab; label: string }[] = [
-    { id: 'logs', label: 'Registro de Ações' },
+    { id: 'actions', label: 'Executar Ação' },
+    { id: 'logs', label: 'Registro' },
     { id: 'warns', label: 'Avisos' },
     { id: 'automod', label: 'Automod' },
   ];
@@ -292,6 +343,78 @@ export function ModerationClient({ guildId }: ModerationClientProps) {
           </button>
         ))}
       </div>
+
+      {/* Execute Action */}
+      {tab === 'actions' && (
+        <div className="max-w-md space-y-4">
+          <p className="text-muted-foreground text-sm">
+            Execute ações de moderação. O bot realizará a ação no Discord.
+          </p>
+
+          <div className="space-y-3">
+            <div>
+              <label className="mb-1 block text-xs font-medium text-muted-foreground">Ação</label>
+              <select
+                value={actionType}
+                onChange={(e) => setActionType(e.target.value as ActionType)}
+                className="border-border bg-background w-full rounded-md border px-3 py-2 text-sm"
+              >
+                {ACTION_TYPES.map((a) => (
+                  <option key={a.value} value={a.value}>{a.label}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="mb-1 block text-xs font-medium text-muted-foreground">ID do Usuário</label>
+              <input
+                type="text"
+                value={actionTargetId}
+                onChange={(e) => setActionTargetId(e.target.value)}
+                placeholder="Ex: 1234567890123456789"
+                className="border-border bg-background w-full rounded-md border px-3 py-2 text-sm font-mono"
+              />
+            </div>
+
+            {ACTION_TYPES.find((a) => a.value === actionType)?.needsDuration && (
+              <div>
+                <label className="mb-1 block text-xs font-medium text-muted-foreground">Duração (ex: 10m, 1h, 1d)</label>
+                <input
+                  type="text"
+                  value={actionDuration}
+                  onChange={(e) => setActionDuration(e.target.value)}
+                  className="border-border bg-background w-full rounded-md border px-3 py-2 text-sm font-mono"
+                />
+              </div>
+            )}
+
+            <div>
+              <label className="mb-1 block text-xs font-medium text-muted-foreground">Motivo</label>
+              <input
+                type="text"
+                value={actionReason}
+                onChange={(e) => setActionReason(e.target.value)}
+                placeholder="Motivo da ação"
+                className="border-border bg-background w-full rounded-md border px-3 py-2 text-sm"
+                maxLength={512}
+              />
+            </div>
+
+            <Button
+              onClick={() => void executeAction()}
+              disabled={actionLoading || !/^\d{17,20}$/.test(actionTargetId) || !actionReason.trim()}
+            >
+              {actionLoading ? 'Enviando...' : 'Executar'}
+            </Button>
+
+            {actionResult && (
+              <p className={cn('text-sm', actionResult.ok ? 'text-green-500' : 'text-red-500')}>
+                {actionResult.msg}
+              </p>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Mod Logs */}
       {tab === 'logs' && (

@@ -68,7 +68,7 @@ const container = createContainer({
 
 registerEvents(client, container, registry);
 
-const commandListener = startBotCommandListener(redis, music, logger);
+const commandListener = startBotCommandListener(redis, music, moderation, client, logger);
 
 const healthServer = startHealthServer({
   host: env.BOT_HEALTH_HOST,

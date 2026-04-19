@@ -1,12 +1,19 @@
 import { botCommandSchema } from '@wesbot/shared';
+import type { Client } from 'discord.js';
 import type Redis from 'ioredis';
 
+import type { ModerationService } from '../application/moderation/moderation-service';
 import type { MusicController } from '../application/music/music-controller';
 import type { Logger } from '../logger';
 
 type BotCommand = typeof botCommandSchema._type;
 
-async function dispatch(cmd: BotCommand, music: MusicController): Promise<void> {
+async function dispatch(
+  cmd: BotCommand,
+  music: MusicController,
+  moderation: ModerationService,
+  client: Client,
+): Promise<void> {
   switch (cmd.type) {
     case 'music.skip':
       await music.skip(cmd.guildId);
@@ -34,20 +41,59 @@ async function dispatch(cmd: BotCommand, music: MusicController): Promise<void> 
       music.reorder(cmd.guildId, cmd.fromIndex, cmd.toIndex);
       break;
     case 'music.play':
-      // play from dashboard requires voice channel — not yet implemented
       break;
+
+    case 'mod.warn': {
+      const guild = await client.guilds.fetch(cmd.guildId);
+      const target = await guild.members.fetch(cmd.targetUserId);
+      const moderator = await client.users.fetch(cmd.moderatorId);
+      await moderation.warn(guild, target, moderator, cmd.reason);
+      break;
+    }
+    case 'mod.kick': {
+      const guild = await client.guilds.fetch(cmd.guildId);
+      const target = await guild.members.fetch(cmd.targetUserId);
+      await target.kick(cmd.reason);
+      await moderation.logAction(cmd.guildId, 'kick', cmd.targetUserId, cmd.moderatorId, cmd.reason);
+      break;
+    }
+    case 'mod.ban': {
+      const guild = await client.guilds.fetch(cmd.guildId);
+      await guild.members.ban(cmd.targetUserId, {
+        reason: cmd.reason,
+        deleteMessageSeconds: cmd.deleteMessageDays * 86400,
+      });
+      await moderation.logAction(cmd.guildId, 'ban', cmd.targetUserId, cmd.moderatorId, cmd.reason);
+      break;
+    }
+    case 'mod.unban': {
+      const guild = await client.guilds.fetch(cmd.guildId);
+      await guild.members.unban(cmd.targetUserId, cmd.reason);
+      await moderation.logAction(cmd.guildId, 'unban', cmd.targetUserId, cmd.moderatorId, cmd.reason);
+      break;
+    }
+    case 'mod.timeout': {
+      const guild = await client.guilds.fetch(cmd.guildId);
+      const target = await guild.members.fetch(cmd.targetUserId);
+      await target.timeout(cmd.durationSec * 1000, cmd.reason);
+      await moderation.logAction(cmd.guildId, 'timeout', cmd.targetUserId, cmd.moderatorId, cmd.reason, cmd.durationSec);
+      break;
+    }
+    case 'mod.untimeout': {
+      const guild = await client.guilds.fetch(cmd.guildId);
+      const target = await guild.members.fetch(cmd.targetUserId);
+      await target.timeout(null, cmd.reason);
+      await moderation.logAction(cmd.guildId, 'untimeout', cmd.targetUserId, cmd.moderatorId, cmd.reason);
+      break;
+    }
   }
 }
 
-/**
- * Subscribes to Redis `commands:bot`, routes messages to MusicController,
- * and publishes replies to `replies:bot:{requestId}`.
- *
- * Returns the subscriber connection so the caller can disconnect it on shutdown.
- */
 export function startBotCommandListener(
   redis: Redis,
   music: MusicController,
+  moderation: ModerationService,
+  client: Client,
   logger: Logger,
 ): Redis {
   const sub = redis.duplicate({ maxRetriesPerRequest: null });
@@ -70,7 +116,7 @@ export function startBotCommandListener(
     }
 
     const { requestId } = cmd;
-    void dispatch(cmd, music)
+    void dispatch(cmd, music, moderation, client)
       .then(() => {
         redis.publish(
           `replies:bot:${requestId}`,

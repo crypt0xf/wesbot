@@ -280,4 +280,40 @@ export function moderationRoutes(app: FastifyInstance, { prisma }: { prisma: Pri
       });
     },
   );
+
+  // POST /api/guilds/:guildId/mod/actions  — publish command to bot
+  const modActionBodySchema = z.discriminatedUnion('type', [
+    z.object({ type: z.literal('warn'), targetUserId: z.string().regex(/^\d{17,20}$/), reason: z.string().min(1).max(512) }),
+    z.object({ type: z.literal('kick'), targetUserId: z.string().regex(/^\d{17,20}$/), reason: z.string().min(1).max(512) }),
+    z.object({ type: z.literal('ban'), targetUserId: z.string().regex(/^\d{17,20}$/), reason: z.string().min(1).max(512), deleteMessageDays: z.number().int().min(0).max(7).default(0) }),
+    z.object({ type: z.literal('unban'), targetUserId: z.string().regex(/^\d{17,20}$/), reason: z.string().min(1).max(512) }),
+    z.object({ type: z.literal('timeout'), targetUserId: z.string().regex(/^\d{17,20}$/), reason: z.string().min(1).max(512), durationSec: z.number().int().positive().max(28 * 86400) }),
+    z.object({ type: z.literal('untimeout'), targetUserId: z.string().regex(/^\d{17,20}$/), reason: z.string().min(1).max(512) }),
+  ]);
+
+  app.post(
+    '/api/guilds/:guildId/mod/actions',
+    { ...baseOpts, schema: { ...baseOpts.schema, body: modActionBodySchema } },
+    async (request, reply) => {
+      const { guildId } = guildIdParamSchema.parse(request.params);
+      const u = request.user!;
+      if (!u.accessToken) return reply.unauthorized();
+      await assertGuildAccess(u.accessToken, guildId).catch(guardAccess(reply));
+      if (reply.sent) return;
+
+      const body = modActionBodySchema.parse(request.body);
+      const requestId = crypto.randomUUID();
+
+      const { type: actionType, ...rest } = body;
+      void app.redis.publish('commands:bot', JSON.stringify({
+        type: `mod.${actionType}`,
+        requestId,
+        guildId,
+        moderatorId: u.id,
+        ...rest,
+      }));
+
+      return reply.status(202).send({ ok: true, requestId });
+    },
+  );
 }

@@ -10,6 +10,8 @@ export interface ApiGuild {
 
 export interface ApiGuildSettings {
   id: string;
+  name: string;
+  icon: string | null;
   prefix: string;
   locale: string;
   djRoleId: string | null;
@@ -19,6 +21,7 @@ export interface ApiGuildSettings {
   autoDisconnectMinutes: number | null;
   defaultVolume: number;
   voteSkipThreshold: number;
+  stats: { modActionsToday: number };
 }
 
 async function apiFetch<T>(path: string, cookieHeader?: string, init?: RequestInit): Promise<T> {

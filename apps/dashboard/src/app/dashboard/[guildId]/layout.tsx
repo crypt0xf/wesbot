@@ -23,17 +23,12 @@ export default async function GuildLayout({ children, params }: GuildLayoutProps
   const settings = await getGuildSettingsSSR(guildId, cookieHeader).catch(() => null);
   if (!settings) notFound();
 
-  // Discord guild info is not available here without an extra API call;
-  // we use the settings ID as the guild name placeholder until Phase 6
-  // adds a proper guild-info endpoint.
-  const guildDisplayName = settings.id;
-
   return (
     <div className="flex h-screen overflow-hidden">
       <Sidebar
         guildId={guildId}
-        guildName={guildDisplayName}
-        guildIcon={null}
+        guildName={settings.name}
+        guildIcon={settings.icon}
         user={{
           name: session.user.name ?? 'Usuário',
           email: session.user.email ?? '',

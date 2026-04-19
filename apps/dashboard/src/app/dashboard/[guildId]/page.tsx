@@ -6,11 +6,14 @@ import {
   Settings,
 } from 'lucide-react';
 import type { Metadata } from 'next';
+import { cookies } from 'next/headers';
 import Link from 'next/link';
 
 import { Badge } from '../../../components/ui/badge';
 
 export const metadata: Metadata = { title: 'Overview' };
+
+const API_URL = process.env.API_URL ?? 'http://localhost:4000';
 
 interface StatCardProps {
   label: string;
@@ -40,6 +43,15 @@ interface GuildOverviewPageProps {
 
 export default async function GuildOverviewPage({ params }: GuildOverviewPageProps) {
   const { guildId } = await params;
+  const cookieStore = await cookies();
+  const cookieHeader = cookieStore.toString();
+
+  const stats = await fetch(`${API_URL}/api/guilds/${guildId}/stats`, {
+    headers: { Cookie: cookieHeader },
+    cache: 'no-store',
+  })
+    .then((r) => (r.ok ? (r.json() as Promise<{ modActionsToday: number }>) : null))
+    .catch(() => null);
 
   return (
     <div className="p-8">
@@ -63,25 +75,25 @@ export default async function GuildOverviewPage({ params }: GuildOverviewPagePro
           label="Músicas tocadas hoje"
           value="—"
           icon={<Music className="h-4 w-4" />}
-          description="Disponível na Fase 6"
+          description="Em breve"
         />
         <StatCard
           label="Ações de moderação"
-          value="—"
+          value={stats ? String(stats.modActionsToday) : '—'}
           icon={<Shield className="h-4 w-4" />}
-          description="Disponível na Fase 7"
+          description="Hoje"
         />
         <StatCard
           label="Membros ativos"
           value="—"
           icon={<Users className="h-4 w-4" />}
-          description="Disponível na Fase 9"
+          description="Em breve"
         />
         <StatCard
           label="Comandos executados"
           value="—"
           icon={<Activity className="h-4 w-4" />}
-          description="Disponível na Fase 10"
+          description="Em breve"
         />
       </div>
 

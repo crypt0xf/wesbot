@@ -4,7 +4,7 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 
 import { writeAuditLog } from '../lib/audit-log';
-import { DiscordApiError, fetchUserGuilds, hasManageGuild } from '../lib/discord-api';
+import { DiscordApiError, fetchUserGuilds, guildIconUrl, hasManageGuild } from '../lib/discord-api';
 
 const guildIdParamSchema = z.object({
   guildId: z.string().regex(/^\d{17,20}$/),
@@ -14,7 +14,7 @@ async function assertGuildAccess(
   prisma: PrismaClient,
   accessToken: string,
   guildId: string,
-): Promise<void> {
+): Promise<{ name: string; icon: string | null }> {
   let guilds: Awaited<ReturnType<typeof fetchUserGuilds>>;
   try {
     guilds = await fetchUserGuilds(accessToken);
@@ -36,6 +36,7 @@ async function assertGuildAccess(
     update: {},
     create: { id: BigInt(guildId) },
   });
+  return { name: guild.name, icon: guildIconUrl(guild.id, guild.icon) };
 }
 
 function serializeGuild(guild: {
@@ -79,18 +80,34 @@ export function guildRoutes(
       const u = request.user!;
       if (!u.accessToken) return reply.unauthorized('No Discord access token in session');
 
-      await assertGuildAccess(prisma, u.accessToken, guildId).catch((e: unknown) => {
-        if (e instanceof Error && e.message === 'Forbidden') reply.forbidden();
-        else if (e instanceof Error && e.message === 'TokenExpired') reply.unauthorized('Discord token expired');
-        else if (e instanceof Error && e.message === 'RateLimited') reply.tooManyRequests('Discord rate limit — try again in a moment');
-        else throw e;
-      });
+      let discordGuild: { name: string; icon: string | null } | undefined;
+      await assertGuildAccess(prisma, u.accessToken, guildId)
+        .then((g) => { discordGuild = g; })
+        .catch((e: unknown) => {
+          if (e instanceof Error && e.message === 'Forbidden') reply.forbidden();
+          else if (e instanceof Error && e.message === 'TokenExpired') reply.unauthorized('Discord token expired');
+          else if (e instanceof Error && e.message === 'RateLimited') reply.tooManyRequests('Discord rate limit — try again in a moment');
+          else throw e;
+        });
       if (reply.sent) return;
 
-      const guild = await prisma.guild.findUnique({ where: { id: BigInt(guildId) } });
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+
+      const [guild, modActionsToday] = await Promise.all([
+        prisma.guild.findUnique({ where: { id: BigInt(guildId) } }),
+        prisma.modLog.count({
+          where: { guildId: BigInt(guildId), createdAt: { gte: todayStart } },
+        }),
+      ]);
       if (!guild) return reply.notFound();
 
-      return serializeGuild(guild);
+      return {
+        ...serializeGuild(guild),
+        name: discordGuild?.name ?? guildId,
+        icon: discordGuild?.icon ?? null,
+        stats: { modActionsToday },
+      };
     },
   );
 
@@ -156,6 +173,26 @@ export function guildRoutes(
       });
 
       return serializeGuild(updated);
+    },
+  );
+
+  // Lightweight stats endpoint — no Discord call, just DB aggregates
+  app.get(
+    '/api/guilds/:guildId/stats',
+    {
+      preHandler: app.authenticate,
+      schema: { params: guildIdParamSchema },
+    },
+    async (request, reply) => {
+      const { guildId } = guildIdParamSchema.parse(request.params);
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+      const guild = await prisma.guild.findUnique({ where: { id: BigInt(guildId) } });
+      if (!guild) return reply.notFound();
+      const modActionsToday = await prisma.modLog.count({
+        where: { guildId: BigInt(guildId), createdAt: { gte: todayStart } },
+      });
+      return { modActionsToday };
     },
   );
 }

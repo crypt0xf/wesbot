@@ -57,7 +57,8 @@ export function usePlayer(guildId: string) {
     return () => {
       socket.off('music', onMusic);
       socket.emit('leave:guild', guildId);
-      store.clear();
+      // Don't clear store here — player bar and other pages still need it.
+      // The store resets naturally when a new guildId is set.
     };
   }, [guildId]);
 

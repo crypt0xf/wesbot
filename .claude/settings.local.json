@@ -83,7 +83,17 @@
       "Bash(pnpm --filter @wesbot/dashboard add socket.io-client zustand @dnd-kit/core @dnd-kit/sortable @dnd-kit/utilities @radix-ui/react-slider @radix-ui/react-progress @radix-ui/react-select)",
       "Bash(pnpm --filter @wesbot/shared typecheck)",
       "Bash(git -C /c/Users/wes/Documents/wesbot add -A)",
-      "Bash(git -C /c/Users/wes/Documents/wesbot status)"
+      "Bash(git -C /c/Users/wes/Documents/wesbot status)",
+      "Bash(git *)",
+      "Bash(pnpm --filter @wesbot/bot tsc --noEmit)",
+      "Bash(pnpm --filter @wesbot/bot exec tsc --noEmit)",
+      "Bash(pnpm --filter @wesbot/api exec tsc --noEmit)",
+      "Bash(pnpm --filter @wesbot/dashboard exec tsc --noEmit)",
+      "Bash(pnpm --filter @wesbot/bot exec eslint src/application/moderation src/presentation/commands/moderation)",
+      "Bash(pnpm --filter @wesbot/bot exec eslint --fix src/application/moderation src/presentation/commands/moderation)",
+      "Bash(pnpm --filter @wesbot/api exec eslint src/routes/moderation.ts)",
+      "Bash(pnpm --filter @wesbot/dashboard exec eslint src/app/dashboard/\\\\[guildId\\\\]/moderation)",
+      "Bash(pnpm *)"
     ]
   }
 }
