@@ -1,23 +1,32 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 
-import { fetchUserGuilds, hasManageGuild } from '../lib/discord-api';
+import { DiscordApiError, fetchUserGuilds, hasManageGuild } from '../lib/discord-api';
 
 const guildIdParamSchema = z.object({
   guildId: z.string().regex(/^\d{17,20}$/),
 });
 
 async function assertGuildAccess(accessToken: string, guildId: string): Promise<void> {
-  const guilds = await fetchUserGuilds(accessToken);
+  let guilds: Awaited<ReturnType<typeof fetchUserGuilds>>;
+  try {
+    guilds = await fetchUserGuilds(accessToken);
+  } catch (e) {
+    if (e instanceof DiscordApiError && e.status === 401) {
+      throw Object.assign(new Error('TokenExpired'), { code: 'TOKEN_EXPIRED' });
+    }
+    throw e;
+  }
   const guild = guilds.find((g) => g.id === guildId);
   if (!guild || (!guild.owner && !hasManageGuild(guild.permissions))) {
     throw Object.assign(new Error('Forbidden'), { code: 'FORBIDDEN' });
   }
 }
 
-function guardAccess(reply: { forbidden: () => unknown }) {
+function guardAccess(reply: { forbidden: () => unknown; unauthorized: (msg: string) => unknown }) {
   return (e: unknown) => {
     if (e instanceof Error && e.message === 'Forbidden') reply.forbidden();
+    else if (e instanceof Error && e.message === 'TokenExpired') reply.unauthorized('Discord token expired');
     else throw e;
   };
 }

@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 
-import { fetchUserGuilds, guildIconUrl, hasManageGuild } from '../lib/discord-api';
+import { DiscordApiError, fetchUserGuilds, guildIconUrl, hasManageGuild } from '../lib/discord-api';
 
 const meResponseSchema = z.object({
   id: z.string(),
@@ -41,7 +41,13 @@ export function authRoutes(app: FastifyInstance): void {
       const u = request.user!;
       if (!u.accessToken) return reply.unauthorized('No Discord access token in session');
 
-      const all = await fetchUserGuilds(u.accessToken);
+      let all: Awaited<ReturnType<typeof fetchUserGuilds>>;
+      try {
+        all = await fetchUserGuilds(u.accessToken);
+      } catch (e) {
+        if (e instanceof DiscordApiError && e.status === 401) return reply.unauthorized('Discord token expired');
+        throw e;
+      }
       const manageable = all.filter((g) => g.owner || hasManageGuild(g.permissions));
 
       return manageable.map((g) => ({

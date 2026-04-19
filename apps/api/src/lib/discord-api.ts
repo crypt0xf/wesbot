@@ -1,5 +1,12 @@
 const DISCORD_API = 'https://discord.com/api/v10';
 
+export class DiscordApiError extends Error {
+  constructor(public readonly status: number) {
+    super(`Discord API error: ${status}`);
+    this.name = 'DiscordApiError';
+  }
+}
+
 export interface DiscordGuild {
   id: string;
   name: string;
@@ -12,7 +19,7 @@ export async function fetchUserGuilds(accessToken: string): Promise<DiscordGuild
   const res = await fetch(`${DISCORD_API}/users/@me/guilds`, {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
-  if (!res.ok) throw new Error(`Discord API error: ${res.status}`);
+  if (!res.ok) throw new DiscordApiError(res.status);
   return (await res.json()) as DiscordGuild[];
 }
 
