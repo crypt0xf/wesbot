@@ -10,24 +10,6 @@ server:
   http2:
     enabled: false
 
-plugins:
-  youtube:
-    enabled: true
-    allowSearch: true
-    allowDirectVideoIds: true
-    allowDirectPlaylistIds: true
-    # Active clients — order matters (first = preferred). MUSIC + WEB + ANDROID_MUSIC
-    # gives the widest compatibility with the least cookie dependency in 2026.
-    clients:
-      - MUSIC
-      - WEB
-      - ANDROID_MUSIC
-      - TVHTML5EMBEDDED
-    # Optional — paste a browser cookies.txt if you hit throttling. Empty disables.
-    # oauth:
-    #   enabled: false
-    #   refreshToken: ''
-
 lavalink:
   plugins:
     - dependency: 'dev.lavalink.youtube:youtube-plugin:1.18.0'
@@ -63,6 +45,17 @@ lavalink:
     youtubePlaylistLoadLimit: 6
     playerUpdateInterval: 5
     gc-warnings: true
+    plugins:
+      youtube:
+        enabled: true
+        allowSearch: true
+        allowDirectVideoIds: true
+        allowDirectPlaylistIds: true
+        clients:
+          - MUSIC
+          - WEB
+          - ANDROID_MUSIC
+          - TVHTML5EMBEDDED
 
 metrics:
   prometheus:
