@@ -35,8 +35,8 @@ lavalink:
   server:
     password: '${LAVALINK_SERVER_PASSWORD:youshallnotpass}'
     sources:
-      # YouTube must be enabled for the youtube-plugin to function
-      youtube: true
+      # Built-in YouTube is disabled; we use the youtube-plugin instead
+      youtube: false
       bandcamp: true
       soundcloud: true
       twitch: true
