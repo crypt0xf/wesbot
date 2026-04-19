@@ -48,6 +48,10 @@ __pycache__/
 # --- Virtual environments ---
 venv/
 .venv/
+
+# --- Docker / Lavalink ---
+docker/lavalink/plugins/*.jar
+docker/lavalink/logs/
 env/
 
 # --- Logs ---
