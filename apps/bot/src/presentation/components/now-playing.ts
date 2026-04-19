@@ -12,6 +12,7 @@ export const MUSIC_BUTTON_IDS = {
   skip: 'music:skip',
   stop: 'music:stop',
   loop: 'music:loop',
+  voteskip: 'music:voteskip',
 } as const;
 
 function formatDuration(ms: number): string {
@@ -99,7 +100,13 @@ export function buildNowPlayingRow(
     .setLabel(`${ctx.t('music.buttons.loop')} · ${ctx.t(`commands.loop.modes.${session.loop}`)}`)
     .setStyle(session.loop === 'off' ? ButtonStyle.Secondary : ButtonStyle.Primary);
 
-  return new ActionRowBuilder<ButtonBuilder>().addComponents(toggle, skip, stop, loop);
+  const voteskip = new ButtonBuilder()
+    .setCustomId(MUSIC_BUTTON_IDS.voteskip)
+    .setLabel(ctx.t('music.buttons.voteskip'))
+    .setStyle(ButtonStyle.Secondary)
+    .setDisabled(session.queue.length === 0 && session.loop === 'off');
+
+  return new ActionRowBuilder<ButtonBuilder>().addComponents(toggle, skip, stop, loop, voteskip);
 }
 
 export function formatTrackLine(track: Track): string {

@@ -7,6 +7,7 @@ import { errorEvent, warnEvent } from './error';
 import { guildCreate, guildDelete } from './guild-lifecycle';
 import { createInteractionCreateHandler } from './interaction-create';
 import { ready } from './ready';
+import { voiceStateUpdate } from './voice-state';
 
 /**
  * Register every discord.js event handler we care about. Each BotEvent receives
@@ -35,5 +36,6 @@ export function registerEvents(
   attach(warnEvent);
   attach(guildCreate);
   attach(guildDelete);
+  attach(voiceStateUpdate);
   attach(createInteractionCreateHandler(commands));
 }

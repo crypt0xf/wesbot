@@ -1,8 +1,14 @@
 import type { LoopMode } from '@wesbot/shared';
-import { type ButtonInteraction, GuildMember, MessageFlags } from 'discord.js';
+import {
+  type ButtonInteraction,
+  GuildMember,
+  MessageFlags,
+  type VoiceBasedChannel,
+} from 'discord.js';
 
 import type { CommandContext } from '../../types';
 import { UserFacingError } from '../../types';
+import { isDj } from '../commands/music/_guards';
 
 import { buildNowPlayingEmbed, buildNowPlayingRow, MUSIC_BUTTON_IDS } from './now-playing';
 
@@ -11,6 +17,14 @@ const LOOP_CYCLE: Record<LoopMode, LoopMode> = {
   track: 'queue',
   queue: 'off',
 };
+
+function humanCount(channel: VoiceBasedChannel): number {
+  return channel.members.filter((m) => !m.user.bot).size;
+}
+
+function requiredVotes(humans: number, threshold: number): number {
+  return Math.max(1, Math.ceil(humans * threshold));
+}
 
 export function isMusicButtonId(customId: string): boolean {
   return customId.startsWith('music:');
@@ -68,6 +82,36 @@ export async function handleMusicButton(
       const current: LoopMode = session?.loop ?? 'off';
       music.setLoop(guildId, LOOP_CYCLE[current]);
       break;
+    }
+    case MUSIC_BUTTON_IDS.voteskip: {
+      const cfg = await ctx.container.settings.get(guildId);
+      if (isDj(member, cfg.djRoleId)) {
+        await music.skip(guildId);
+        break;
+      }
+      const humans = humanCount(userVoice);
+      if (humans <= 1) {
+        await music.skip(guildId);
+        break;
+      }
+      const needed = requiredVotes(humans, cfg.voteSkipThreshold);
+      const { count, alreadyVoted } = music.registerSkipVote(guildId, member.id, needed);
+      if (alreadyVoted) {
+        await interaction.reply({
+          content: ctx.t('commands.voteskip.alreadyVoted'),
+          flags: MessageFlags.Ephemeral,
+        });
+        return;
+      }
+      if (count >= needed) {
+        await music.skip(guildId);
+        break;
+      }
+      await interaction.reply({
+        content: ctx.t('commands.voteskip.counted', { current: count, needed }),
+        flags: MessageFlags.Ephemeral,
+      });
+      return;
     }
     default:
       await interaction.reply({

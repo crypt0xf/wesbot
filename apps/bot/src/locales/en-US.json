@@ -102,6 +102,109 @@
       "duration": "Duration",
       "requestedBy": "Requested by",
       "nothing": "Nothing is playing."
+    },
+    "settings": {
+      "description": "Manage server settings",
+      "dj": {
+        "description": "Set or clear the DJ role",
+        "roleOption": "Role allowed to run DJ commands",
+        "set": "🎧 DJ role: <@&{roleId}>",
+        "cleared": "🎧 DJ role cleared. Anyone in the voice channel can run music commands."
+      },
+      "247": {
+        "description": "Toggle 24/7 mode (don't auto-disconnect)",
+        "enabledOption": "On or off",
+        "set": "🌙 24/7 mode: **{state}**"
+      },
+      "volume": {
+        "description": "Set the default volume when joining a channel",
+        "levelOption": "Default volume (0-200)",
+        "set": "🔊 Default volume: **{volume}%**"
+      },
+      "voteskip": {
+        "description": "Adjust the percentage required to vote-skip",
+        "thresholdOption": "Percent (10-100)",
+        "set": "🗳️ Vote-skip threshold: **{percent}%**"
+      },
+      "autodisconnect": {
+        "description": "Adjust how long to wait in an empty channel",
+        "minutesOption": "Minutes (0 disables)",
+        "set": "⏱️ Auto-disconnect: **{minutes} min**",
+        "disabled": "⏱️ Auto-disconnect disabled."
+      },
+      "show": {
+        "description": "Show current server configuration",
+        "title": "Configuration for {guild}",
+        "fields": {
+          "dj": "DJ role",
+          "247": "24/7",
+          "volume": "Default volume",
+          "voteSkip": "Vote-skip",
+          "autoDisconnect": "Auto-disconnect"
+        },
+        "none": "none"
+      },
+      "enabled": "on",
+      "disabled": "off"
+    },
+    "voteskip": {
+      "description": "Vote to skip the current track",
+      "counted": "🗳️ Vote counted · **{current}/{needed}**",
+      "alreadyVoted": "You already voted to skip.",
+      "bypass": "⏭️ Skipped as DJ.",
+      "passed": "⏭️ Vote passed — skipping."
+    },
+    "filter": {
+      "description": "Apply an audio filter",
+      "presetOption": "Filter",
+      "applied": "🎛️ Filter applied: **{name}**",
+      "cleared": "🎛️ Filters cleared.",
+      "presets": {
+        "off": "off",
+        "bassboost": "bassboost",
+        "nightcore": "nightcore",
+        "eightd": "8D"
+      }
+    },
+    "autoplay": {
+      "description": "Toggle autoplay (keep playing related tracks)",
+      "enabledOption": "On or off",
+      "set": "♾️ Autoplay: **{state}**"
+    },
+    "playlist": {
+      "description": "Manage your saved playlists",
+      "save": {
+        "description": "Save the current queue as a playlist",
+        "nameOption": "Playlist name",
+        "saved": "💾 Playlist **{name}** saved ({count} tracks).",
+        "emptyQueue": "Nothing in the queue to save.",
+        "duplicate": "You already have a playlist with that name.",
+        "limitReached": "You reached the saved playlists limit."
+      },
+      "play": {
+        "description": "Play a saved playlist",
+        "nameOption": "Playlist name",
+        "loaded": "▶️ Playlist **{name}** loaded ({count} tracks).",
+        "notFound": "Playlist not found."
+      },
+      "list": {
+        "description": "List your saved playlists",
+        "title": "Your playlists",
+        "empty": "You don't have any saved playlists yet.",
+        "item": "**{name}** — {count} tracks"
+      },
+      "delete": {
+        "description": "Delete a saved playlist",
+        "nameOption": "Playlist name",
+        "deleted": "🗑️ Playlist **{name}** deleted.",
+        "notFound": "Playlist not found."
+      }
+    },
+    "lyrics": {
+      "description": "Show lyrics for the current track or a search",
+      "queryOption": "Artist and song (optional)",
+      "header": "📝 **{title}** — {artist}",
+      "notFound": "Couldn't find lyrics for that song."
     }
   },
   "music": {
@@ -110,7 +213,8 @@
       "resume": "Resume",
       "skip": "Skip",
       "stop": "Stop",
-      "loop": "Loop"
+      "loop": "Loop",
+      "voteskip": "Vote-skip"
     }
   },
   "errors": {
@@ -129,7 +233,11 @@
       "loadFailed": "⚠️ Failed to load that audio: {message}",
       "notSeekable": "⚠️ Cannot seek in this track.",
       "noNodes": "🛑 No Lavalink nodes are currently available.",
-      "guildOnly": "This command only works in servers."
+      "guildOnly": "This command only works in servers.",
+      "djOnly": "🎧 Only the DJ role (or Manage Guild) can use this command.",
+      "noVoteNeeded": "⏭️ No one else to vote — skipping immediately.",
+      "playlistNotFound": "📭 Playlist not found.",
+      "lyricsError": "⚠️ Failed to fetch lyrics: {message}"
     }
   }
 }

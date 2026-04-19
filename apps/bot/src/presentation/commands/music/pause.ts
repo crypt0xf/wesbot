@@ -4,7 +4,7 @@ import { MessageFlags, SlashCommandBuilder } from 'discord.js';
 import { i18n } from '../../../infrastructure/i18n';
 import type { SlashCommand } from '../../../types';
 
-import { requireVoiceContext } from './_guards';
+import { requireDj, requireVoiceContext } from './_guards';
 
 const pause: SlashCommand = {
   category: 'music',
@@ -13,7 +13,8 @@ const pause: SlashCommand = {
     .setDescription(i18n.t(DEFAULT_LOCALE, 'commands.pause.description'))
     .setDescriptionLocalizations(i18n.localizations('commands.pause.description')),
   async execute(interaction, ctx) {
-    const { guild } = requireVoiceContext(interaction);
+    const { guild, member } = requireVoiceContext(interaction);
+    await requireDj(ctx.container.settings, guild.id, member);
     const player = ctx.container.music.getPlayer(guild.id);
     if (player?.paused) {
       await interaction.reply({

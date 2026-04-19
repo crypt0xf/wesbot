@@ -6,7 +6,7 @@ import type { SlashCommand } from '../../../types';
 import { ValidationError } from '../../../types';
 import { formatDuration } from '../../components/now-playing';
 
-import { requireVoiceContext } from './_guards';
+import { requireDj, requireVoiceContext } from './_guards';
 
 /**
  * Accept either raw seconds (`90`), `mm:ss` (`1:30`), or `hh:mm:ss` (`1:02:03`).
@@ -45,7 +45,8 @@ const seek: SlashCommand = {
         .setRequired(true),
     ),
   async execute(interaction, ctx) {
-    const { guild } = requireVoiceContext(interaction);
+    const { guild, member } = requireVoiceContext(interaction);
+    await requireDj(ctx.container.settings, guild.id, member);
     const positionMs = parsePosition(interaction.options.getString('position', true));
     await ctx.container.music.seek(guild.id, positionMs);
     await interaction.reply(

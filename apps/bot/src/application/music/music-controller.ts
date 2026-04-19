@@ -1,10 +1,19 @@
 import { type LoopMode, MAX_VOLUME, type Track } from '@wesbot/shared';
-import { LoadType, type Player, type Shoukaku, type Track as LavalinkTrack } from 'shoukaku';
+import {
+  type FilterOptions,
+  LoadType,
+  type Player,
+  type Shoukaku,
+  type Track as LavalinkTrack,
+} from 'shoukaku';
 
 import { GuildMusicSession } from '../../domain/music/session';
 import type { Logger } from '../../logger';
 import { NotFoundError, UserFacingError, ValidationError } from '../../types';
 
+import type { FilterName } from './filters';
+import { FILTER_PRESETS } from './filters';
+import type { QueuePersistence } from './queue-persistence';
 import { fromLavalinkTrack } from './track-mapper';
 
 export interface PlayInput {
@@ -23,6 +32,13 @@ export interface PlayResult {
   playlistName?: string;
 }
 
+export interface ResolvedIdentifier {
+  /** Raw Lavalink Track objects — needed when callers want to enqueue all results. */
+  tracks: LavalinkTrack[];
+  loadType: LoadType;
+  playlistName?: string;
+}
+
 /**
  * Orchestrates per-guild music playback on top of Shoukaku. Holds the domain
  * session, resolves queries via Lavalink REST, wires player events to advance
@@ -34,6 +50,7 @@ export class MusicController {
   constructor(
     private readonly shoukaku: Shoukaku,
     private readonly logger: Logger,
+    private readonly persistence?: QueuePersistence,
   ) {}
 
   getSession(guildId: string): GuildMusicSession | undefined {
@@ -105,12 +122,54 @@ export class MusicController {
       }
     }
 
+    this.persist(session);
+
     return {
       kind,
       added: added.slice(0, accepted),
       startedImmediately,
       ...(playlistName !== undefined ? { playlistName } : {}),
     };
+  }
+
+  /** Enqueue pre-resolved tracks (e.g. from a saved playlist). */
+  async enqueueTracks(input: {
+    guildId: string;
+    voiceChannelId: string;
+    textChannelId: string;
+    shardId: number;
+    tracks: Track[];
+  }): Promise<{ accepted: number; startedImmediately: boolean }> {
+    if (input.tracks.length === 0) {
+      throw new NotFoundError('empty playlist', 'errors.music.noResults');
+    }
+    const session = this.getOrCreateSession(input.guildId);
+    session.voiceChannelId = input.voiceChannelId;
+    session.textChannelId = input.textChannelId;
+
+    const accepted = session.enqueueMany(input.tracks);
+    if (accepted === 0) {
+      throw new UserFacingError('queue full', 'errors.music.queueFull');
+    }
+
+    const player = await this.ensurePlayer({
+      guildId: input.guildId,
+      voiceChannelId: input.voiceChannelId,
+      textChannelId: input.textChannelId,
+      shardId: input.shardId,
+      query: '',
+      requesterId: '',
+    });
+    const startedImmediately = session.current === null;
+    if (startedImmediately) {
+      const first = session.advance();
+      if (first?.encoded) {
+        await player.playTrack({ track: { encoded: first.encoded } });
+      }
+    }
+
+    this.persist(session);
+    return { accepted, startedImmediately };
   }
 
   async pause(guildId: string): Promise<void> {
@@ -135,6 +194,7 @@ export class MusicController {
     const next = session.advance();
     if (next?.encoded) {
       await player.playTrack({ track: { encoded: next.encoded } });
+      this.persist(session);
       return next;
     }
     await this.stop(guildId);
@@ -154,6 +214,9 @@ export class MusicController {
       this.logger.warn({ err, guildId }, 'leaveVoiceChannel failed');
     });
     this.sessions.delete(guildId);
+    if (this.persistence) {
+      void this.persistence.drop(guildId);
+    }
   }
 
   async seek(guildId: string, positionMs: number): Promise<void> {
@@ -177,12 +240,45 @@ export class MusicController {
     const player = this.requirePlayer(guildId);
     session.setVolume(clamped);
     await player.setGlobalVolume(clamped);
+    this.persist(session);
     return clamped;
   }
 
   setLoop(guildId: string, mode: LoopMode): void {
     const session = this.requireSession(guildId);
     session.setLoop(mode);
+    this.persist(session);
+  }
+
+  /**
+   * Record a skip vote for `userId` on the active track. Returns the current
+   * tally vs. the required number. Caller decides whether to call `skip` when
+   * `count >= required`. `required` is expected to already be clamped to >= 1.
+   */
+  registerSkipVote(
+    guildId: string,
+    userId: string,
+    required: number,
+  ): { count: number; required: number; alreadyVoted: boolean } {
+    const session = this.requireSession(guildId);
+    const alreadyVoted = session.skipVotes.has(userId);
+    session.skipVotes.add(userId);
+    return { count: session.skipVotes.size, required, alreadyVoted };
+  }
+
+  setAutoplay(guildId: string, enabled: boolean): void {
+    const session = this.requireSession(guildId);
+    session.autoplay = enabled;
+    this.persist(session);
+  }
+
+  async applyFilter(guildId: string, name: FilterName): Promise<void> {
+    const player = this.requirePlayer(guildId);
+    const session = this.requireSession(guildId);
+    const preset: FilterOptions | null = name === 'off' ? null : FILTER_PRESETS[name];
+    await player.setFilters(preset ?? {});
+    session.activeFilter = name;
+    this.persist(session);
   }
 
   private requireSession(guildId: string): GuildMusicSession {
@@ -259,10 +355,52 @@ export class MusicController {
     const next = session.advance();
     if (next?.encoded) {
       await player.playTrack({ track: { encoded: next.encoded } });
+      this.persist(session);
       return;
     }
+
+    if (session.autoplay) {
+      const related = await this.findRelatedTrack(session).catch((err: unknown) => {
+        this.logger.warn({ err, guildId }, 'autoplay lookup failed');
+        return null;
+      });
+      if (related) {
+        session.enqueue(related);
+        const picked = session.advance();
+        if (picked?.encoded) {
+          await player.playTrack({ track: { encoded: picked.encoded } });
+          this.persist(session);
+          return;
+        }
+      }
+    }
+
     this.logger.info({ guildId, reason }, 'queue exhausted, leaving voice');
     await this.stop(guildId);
+  }
+
+  private async findRelatedTrack(session: GuildMusicSession): Promise<Track | null> {
+    const seed = session.history[session.history.length - 1] ?? session.current;
+    if (!seed) {
+      return null;
+    }
+    const query = `ytmsearch:${seed.author} ${seed.title}`;
+    const node = this.pickNode();
+    const res = await node.rest.resolve(query);
+    if (!res || (res.loadType !== LoadType.SEARCH && res.loadType !== LoadType.TRACK)) {
+      return null;
+    }
+    const candidates = res.loadType === LoadType.SEARCH ? res.data : [res.data];
+    const seenIds = new Set(
+      [...session.history, ...(session.current ? [session.current] : [])].map((t) => t.identifier),
+    );
+    for (const candidate of candidates) {
+      const mapped = fromLavalinkTrack(candidate, seed.requesterId ?? null);
+      if (!seenIds.has(mapped.identifier)) {
+        return mapped;
+      }
+    }
+    return null;
   }
 
   private async resolve(query: string): Promise<
@@ -301,7 +439,7 @@ export class MusicController {
   /**
    * If the query looks like a URL, pass it through; otherwise prefix with
    * `ytsearch:` so Lavalink runs a YouTube search. Callers can override by
-   * sending an explicit prefix like `scsearch:lofi`.
+   * sending an explicit prefix like `scsearch:lofi` or `spsearch:`.
    */
   private toIdentifier(query: string): string {
     const trimmed = query.trim();
@@ -312,5 +450,12 @@ export class MusicController {
       return trimmed;
     }
     return `ytsearch:${trimmed}`;
+  }
+
+  private persist(session: GuildMusicSession): void {
+    if (!this.persistence) {
+      return;
+    }
+    void this.persistence.save(session);
   }
 }

@@ -1,6 +1,12 @@
+import type { PrismaClient } from '@wesbot/database';
 import type { Client } from 'discord.js';
+import type Redis from 'ioredis';
 
+import type { LyricsService } from './application/music/lyrics-service';
 import type { MusicController } from './application/music/music-controller';
+import type { PlaylistService } from './application/music/playlist-service';
+import type { VoiceActivityWatcher } from './application/music/voice-activity-watcher';
+import type { GuildConfigService } from './application/settings/guild-config-service';
 import type { I18n } from './infrastructure/i18n';
 import type { Logger } from './logger';
 import type { SlashCommand } from './types';
@@ -16,7 +22,13 @@ export interface Container {
   client: Client;
   /** All registered slash commands, keyed by command name. Used by /help. */
   commands: ReadonlyMap<string, SlashCommand>;
+  lyrics: LyricsService;
   music: MusicController;
+  playlists: PlaylistService;
+  prisma: PrismaClient;
+  redis: Redis;
+  settings: GuildConfigService;
+  voiceWatcher: VoiceActivityWatcher;
   readonly startedAt: number;
 }
 

@@ -102,6 +102,109 @@
       "duration": "Duração",
       "requestedBy": "Pedido por",
       "nothing": "Nada tocando."
+    },
+    "settings": {
+      "description": "Gerencia as configurações do servidor",
+      "dj": {
+        "description": "Define ou limpa o cargo de DJ",
+        "roleOption": "Cargo que poderá usar comandos de DJ",
+        "set": "🎧 Cargo de DJ: <@&{roleId}>",
+        "cleared": "🎧 Cargo de DJ removido. Qualquer membro no canal de voz pode usar os comandos."
+      },
+      "247": {
+        "description": "Liga/desliga o modo 24/7 (não desconectar sozinho)",
+        "enabledOption": "Ligado ou desligado",
+        "set": "🌙 Modo 24/7: **{state}**"
+      },
+      "volume": {
+        "description": "Define o volume padrão ao entrar no canal",
+        "levelOption": "Volume padrão (0-200)",
+        "set": "🔊 Volume padrão: **{volume}%**"
+      },
+      "voteskip": {
+        "description": "Ajusta a porcentagem necessária para pular por votação",
+        "thresholdOption": "Porcentagem (10-100)",
+        "set": "🗳️ Limiar de vote-skip: **{percent}%**"
+      },
+      "autodisconnect": {
+        "description": "Ajusta o tempo antes de sair de um canal vazio",
+        "minutesOption": "Minutos (0 desliga)",
+        "set": "⏱️ Auto-desconexão: **{minutes} min**",
+        "disabled": "⏱️ Auto-desconexão desligada."
+      },
+      "show": {
+        "description": "Mostra a configuração atual do servidor",
+        "title": "Configuração de {guild}",
+        "fields": {
+          "dj": "Cargo DJ",
+          "247": "24/7",
+          "volume": "Volume padrão",
+          "voteSkip": "Vote-skip",
+          "autoDisconnect": "Auto-desconexão"
+        },
+        "none": "nenhum"
+      },
+      "enabled": "ligado",
+      "disabled": "desligado"
+    },
+    "voteskip": {
+      "description": "Votar para pular a faixa atual",
+      "counted": "🗳️ Voto registrado · **{current}/{needed}**",
+      "alreadyVoted": "Você já votou para pular.",
+      "bypass": "⏭️ Você pulou como DJ.",
+      "passed": "⏭️ Votação aprovada — pulando."
+    },
+    "filter": {
+      "description": "Aplica um filtro de áudio",
+      "presetOption": "Filtro",
+      "applied": "🎛️ Filtro aplicado: **{name}**",
+      "cleared": "🎛️ Filtros removidos.",
+      "presets": {
+        "off": "desligado",
+        "bassboost": "bassboost",
+        "nightcore": "nightcore",
+        "eightd": "8D"
+      }
+    },
+    "autoplay": {
+      "description": "Liga/desliga o modo autoplay (continua tocando relacionadas)",
+      "enabledOption": "Ligado ou desligado",
+      "set": "♾️ Autoplay: **{state}**"
+    },
+    "playlist": {
+      "description": "Gerencia suas playlists salvas",
+      "save": {
+        "description": "Salva a fila atual como playlist",
+        "nameOption": "Nome da playlist",
+        "saved": "💾 Playlist **{name}** salva ({count} faixas).",
+        "emptyQueue": "Nada na fila para salvar.",
+        "duplicate": "Já existe uma playlist sua com esse nome.",
+        "limitReached": "Você atingiu o limite de playlists salvas."
+      },
+      "play": {
+        "description": "Toca uma playlist salva",
+        "nameOption": "Nome da playlist",
+        "loaded": "▶️ Playlist **{name}** carregada ({count} faixas).",
+        "notFound": "Playlist não encontrada."
+      },
+      "list": {
+        "description": "Lista suas playlists salvas",
+        "title": "Suas playlists",
+        "empty": "Você ainda não tem playlists salvas.",
+        "item": "**{name}** — {count} faixas"
+      },
+      "delete": {
+        "description": "Exclui uma playlist salva",
+        "nameOption": "Nome da playlist",
+        "deleted": "🗑️ Playlist **{name}** excluída.",
+        "notFound": "Playlist não encontrada."
+      }
+    },
+    "lyrics": {
+      "description": "Mostra a letra da faixa atual ou de uma busca",
+      "queryOption": "Artista e música (opcional)",
+      "header": "📝 **{title}** — {artist}",
+      "notFound": "Não encontrei a letra dessa música."
     }
   },
   "music": {
@@ -110,7 +213,8 @@
       "resume": "Retomar",
       "skip": "Pular",
       "stop": "Parar",
-      "loop": "Loop"
+      "loop": "Loop",
+      "voteskip": "Vote-skip"
     }
   },
   "errors": {
@@ -129,7 +233,11 @@
       "loadFailed": "⚠️ Não consegui carregar esse áudio: {message}",
       "notSeekable": "⚠️ Não é possível avançar nesta faixa.",
       "noNodes": "🛑 Nenhum nó Lavalink disponível no momento.",
-      "guildOnly": "Este comando só funciona em servidores."
+      "guildOnly": "Este comando só funciona em servidores.",
+      "djOnly": "🎧 Só o cargo de DJ (ou quem pode Gerenciar Servidor) pode usar esse comando.",
+      "noVoteNeeded": "⏭️ Sem ninguém para votar — pulando direto.",
+      "playlistNotFound": "📭 Playlist não encontrada.",
+      "lyricsError": "⚠️ Falha ao buscar a letra: {message}"
     }
   }
 }

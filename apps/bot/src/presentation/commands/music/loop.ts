@@ -4,7 +4,7 @@ import { SlashCommandBuilder } from 'discord.js';
 import { i18n } from '../../../infrastructure/i18n';
 import type { SlashCommand } from '../../../types';
 
-import { requireVoiceContext } from './_guards';
+import { requireDj, requireVoiceContext } from './_guards';
 
 const LOOP_MODES: readonly LoopMode[] = ['off', 'track', 'queue'];
 
@@ -27,7 +27,8 @@ const loop: SlashCommand = {
         ),
     ),
   async execute(interaction, ctx) {
-    const { guild } = requireVoiceContext(interaction);
+    const { guild, member } = requireVoiceContext(interaction);
+    await requireDj(ctx.container.settings, guild.id, member);
     const raw = interaction.options.getString('mode', true);
     const mode = LOOP_MODES.find((m) => m === raw) ?? 'off';
     ctx.container.music.setLoop(guild.id, mode);

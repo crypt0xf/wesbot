@@ -1,4 +1,11 @@
+import { prisma } from '@wesbot/database';
+
+import { LyricsService } from './application/music/lyrics-service';
 import { MusicController } from './application/music/music-controller';
+import { PlaylistService } from './application/music/playlist-service';
+import { QueuePersistence } from './application/music/queue-persistence';
+import { VoiceActivityWatcher } from './application/music/voice-activity-watcher';
+import { GuildConfigService } from './application/settings/guild-config-service';
 import { createClient } from './client';
 import { createContainer } from './container';
 import { env } from './env';
@@ -6,6 +13,7 @@ import { registerCommands } from './infrastructure/command-registrar';
 import { startHealthServer } from './infrastructure/health-server';
 import { i18n } from './infrastructure/i18n';
 import { createShoukaku } from './infrastructure/lavalink';
+import { createRedis } from './infrastructure/redis';
 import { logger } from './logger';
 import { buildCommandRegistry, commands } from './presentation/commands/index';
 import { registerEvents } from './presentation/events/index';
@@ -29,13 +37,25 @@ const shoukaku = createShoukaku({
   password: env.LAVALINK_PASSWORD,
   secure: env.LAVALINK_SECURE,
 });
-const music = new MusicController(shoukaku, logger);
+const redis = createRedis(env.REDIS_URL, logger);
+const persistence = new QueuePersistence(redis, logger);
+const music = new MusicController(shoukaku, logger, persistence);
+const settings = new GuildConfigService(prisma, logger);
+const playlists = new PlaylistService(prisma, logger);
+const lyrics = new LyricsService(logger);
+const voiceWatcher = new VoiceActivityWatcher(client, music, settings, logger);
 const container = createContainer({
   logger,
   i18n,
   client,
   commands: registry,
+  lyrics,
   music,
+  playlists,
+  prisma,
+  redis,
+  settings,
+  voiceWatcher,
 });
 
 registerEvents(client, container, registry);
@@ -58,7 +78,12 @@ await client.login(env.DISCORD_TOKEN);
 async function shutdown(signal: string): Promise<void> {
   logger.info({ signal }, 'shutting down');
   healthServer.close();
+  voiceWatcher.disposeAll();
   await client.destroy();
+  await prisma.$disconnect().catch((err: unknown) => {
+    logger.warn({ err }, 'prisma disconnect failed');
+  });
+  redis.disconnect();
   process.exit(0);
 }
 

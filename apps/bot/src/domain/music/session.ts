@@ -1,9 +1,11 @@
 import { type LoopMode, MAX_HISTORY_SIZE, MAX_QUEUE_SIZE, type Track } from '@wesbot/shared';
 
+export type ActiveFilter = 'off' | 'bassboost' | 'nightcore' | 'eightd';
+
 /**
- * Per-guild music session state. In-memory only for Phase 2; Redis-backed
- * persistence lands in Phase 3. Pure data + queue invariants — no discord.js
- * or shoukaku types leak in here.
+ * Per-guild music session state. Pure data + queue invariants — no discord.js
+ * or shoukaku types leak in here. State may be mirrored to Redis by
+ * QueuePersistence at the controller layer.
  */
 export class GuildMusicSession {
   readonly guildId: string;
@@ -15,6 +17,9 @@ export class GuildMusicSession {
   loop: LoopMode = 'off';
   volume = 100;
   autoplay = false;
+  activeFilter: ActiveFilter = 'off';
+  /** User IDs that have voted to skip the current track. Reset on track change. */
+  readonly skipVotes = new Set<string>();
 
   constructor(guildId: string) {
     this.guildId = guildId;
@@ -66,6 +71,7 @@ export class GuildMusicSession {
 
     const next = this.queue.shift() ?? null;
     this.current = next;
+    this.skipVotes.clear();
     return next;
   }
 
@@ -82,6 +88,8 @@ export class GuildMusicSession {
     this.loop = 'off';
     this.autoplay = false;
     this.voiceChannelId = null;
+    this.activeFilter = 'off';
+    this.skipVotes.clear();
   }
 
   setLoop(mode: LoopMode): void {

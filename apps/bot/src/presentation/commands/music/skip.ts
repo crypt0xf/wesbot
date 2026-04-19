@@ -4,7 +4,7 @@ import { SlashCommandBuilder } from 'discord.js';
 import { i18n } from '../../../infrastructure/i18n';
 import type { SlashCommand } from '../../../types';
 
-import { requireVoiceContext } from './_guards';
+import { requireDj, requireVoiceContext } from './_guards';
 
 const skip: SlashCommand = {
   category: 'music',
@@ -13,7 +13,8 @@ const skip: SlashCommand = {
     .setDescription(i18n.t(DEFAULT_LOCALE, 'commands.skip.description'))
     .setDescriptionLocalizations(i18n.localizations('commands.skip.description')),
   async execute(interaction, ctx) {
-    const { guild } = requireVoiceContext(interaction);
+    const { guild, member } = requireVoiceContext(interaction);
+    await requireDj(ctx.container.settings, guild.id, member);
     const session = ctx.container.music.getSession(guild.id);
     const skipped = session?.current;
     const next = await ctx.container.music.skip(guild.id);

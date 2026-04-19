@@ -2,9 +2,11 @@ import {
   type ChatInputCommandInteraction,
   type Guild,
   GuildMember,
+  PermissionFlagsBits,
   type VoiceBasedChannel,
 } from 'discord.js';
 
+import type { GuildConfigService } from '../../../application/settings/guild-config-service';
 import { UserFacingError } from '../../../types';
 
 export interface VoiceContext {
@@ -44,4 +46,32 @@ export function requireGuildId(interaction: ChatInputCommandInteraction): string
     throw new UserFacingError('guild only', 'errors.music.guildOnly');
   }
   return interaction.guildId;
+}
+
+/**
+ * True if the caller may run destructive music actions (skip/stop/seek/volume/
+ * filter/autoplay). Rules:
+ * - Manage Guild bypasses everything.
+ * - If the guild has a DJ role configured, the caller must hold it.
+ * - If no DJ role is configured, anyone in voice may run the command.
+ */
+export function isDj(member: GuildMember, djRoleId: string | null): boolean {
+  if (member.permissions.has(PermissionFlagsBits.ManageGuild)) {
+    return true;
+  }
+  if (!djRoleId) {
+    return true;
+  }
+  return member.roles.cache.has(djRoleId);
+}
+
+export async function requireDj(
+  settings: GuildConfigService,
+  guildId: string,
+  member: GuildMember,
+): Promise<void> {
+  const cfg = await settings.get(guildId);
+  if (!isDj(member, cfg.djRoleId)) {
+    throw new UserFacingError('dj only', 'errors.music.djOnly');
+  }
 }
