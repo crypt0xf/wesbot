@@ -6,13 +6,9 @@ import {
   Settings,
 } from 'lucide-react';
 import type { Metadata } from 'next';
-import { cookies } from 'next/headers';
-import { redirect } from 'next/navigation';
+import Link from 'next/link';
 
-
-import { auth } from '../../../auth';
 import { Badge } from '../../../components/ui/badge';
-import { getGuildSettingsSSR } from '../../../lib/api';
 
 export const metadata: Metadata = { title: 'Overview' };
 
@@ -43,12 +39,7 @@ interface GuildOverviewPageProps {
 }
 
 export default async function GuildOverviewPage({ params }: GuildOverviewPageProps) {
-  const session = await auth();
-  if (!session) redirect('/login');
-
   const { guildId } = await params;
-  const cookieStore = await cookies();
-  const settings = await getGuildSettingsSSR(guildId, cookieStore.toString()).catch(() => null);
 
   return (
     <div className="p-8">
@@ -94,35 +85,6 @@ export default async function GuildOverviewPage({ params }: GuildOverviewPagePro
         />
       </div>
 
-      {/* Settings summary */}
-      {settings && (
-        <div className="mt-8">
-          <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-            Configurações ativas
-          </h2>
-          <div className="bg-card border-border grid grid-cols-2 divide-x divide-y rounded-xl border lg:grid-cols-3">
-            {[
-              { label: 'Prefixo', value: settings.prefix },
-              { label: 'Idioma', value: settings.locale },
-              { label: 'Volume padrão', value: `${settings.defaultVolume}%` },
-              { label: 'Vote skip', value: `${Math.round(settings.voteSkipThreshold * 100)}%` },
-              { label: '24/7', value: settings.twentyFourSeven ? 'Ativado' : 'Desativado' },
-              {
-                label: 'Auto-desconexão',
-                value: settings.autoDisconnectMinutes
-                  ? `${settings.autoDisconnectMinutes} min`
-                  : 'Desativado',
-              },
-            ].map(({ label, value }) => (
-              <div key={label} className="divide-border p-4">
-                <p className="text-muted-foreground text-xs">{label}</p>
-                <p className="mt-0.5 text-sm font-medium">{value}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* Quick actions */}
       <div className="mt-8">
         <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
@@ -134,14 +96,14 @@ export default async function GuildOverviewPage({ params }: GuildOverviewPagePro
             { label: 'Moderação', icon: <Shield className="h-3.5 w-3.5" />, href: 'moderation' },
             { label: 'Configurações', icon: <Settings className="h-3.5 w-3.5" />, href: 'settings' },
           ].map(({ label, icon, href }) => (
-            <a
+            <Link
               key={href}
               href={`/dashboard/${guildId}/${href}`}
               className="border-border hover:border-primary/40 hover:text-primary inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm transition-colors"
             >
               {icon}
               {label}
-            </a>
+            </Link>
           ))}
         </div>
       </div>

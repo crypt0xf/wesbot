@@ -22,6 +22,9 @@ async function assertGuildAccess(
     if (e instanceof DiscordApiError && e.status === 401) {
       throw Object.assign(new Error('TokenExpired'), { code: 'TOKEN_EXPIRED' });
     }
+    if (e instanceof DiscordApiError && e.status === 429) {
+      throw Object.assign(new Error('RateLimited'), { code: 'RATE_LIMITED' });
+    }
     throw e;
   }
   const guild = guilds.find((g) => g.id === guildId);
@@ -79,6 +82,7 @@ export function guildRoutes(
       await assertGuildAccess(prisma, u.accessToken, guildId).catch((e: unknown) => {
         if (e instanceof Error && e.message === 'Forbidden') reply.forbidden();
         else if (e instanceof Error && e.message === 'TokenExpired') reply.unauthorized('Discord token expired');
+        else if (e instanceof Error && e.message === 'RateLimited') reply.tooManyRequests('Discord rate limit — try again in a moment');
         else throw e;
       });
       if (reply.sent) return;
@@ -104,6 +108,7 @@ export function guildRoutes(
       await assertGuildAccess(prisma, u.accessToken, guildId).catch((e: unknown) => {
         if (e instanceof Error && e.message === 'Forbidden') reply.forbidden();
         else if (e instanceof Error && e.message === 'TokenExpired') reply.unauthorized('Discord token expired');
+        else if (e instanceof Error && e.message === 'RateLimited') reply.tooManyRequests('Discord rate limit — try again in a moment');
         else throw e;
       });
       if (reply.sent) return;
