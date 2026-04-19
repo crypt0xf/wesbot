@@ -30,7 +30,7 @@ plugins:
 
 lavalink:
   plugins:
-    - dependency: 'dev.lavalink.youtube:youtube-plugin:1.13.0'
+    - dependency: 'dev.lavalink.youtube:youtube-plugin:1.18.0'
       snapshot: false
   server:
     password: '${LAVALINK_SERVER_PASSWORD:youshallnotpass}'
