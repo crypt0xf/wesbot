@@ -31,7 +31,7 @@ export function createShoukaku(opts: LavalinkOptions): Shoukaku {
     resumeByLibrary: true,
     reconnectTries: 5,
     reconnectInterval: 5,
-    restTimeout: 20,
+    restTimeout: 60,
     moveOnDisconnect: false,
     voiceConnectionTimeout: 15,
   });
