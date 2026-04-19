@@ -9,7 +9,7 @@ export const metadata: Metadata = { title: 'Entrar' };
 
 export default async function LoginPage() {
   const session = await auth();
-  if (session) redirect('/dashboard');
+  if (session && !session.error) redirect('/dashboard');
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center px-6">
