@@ -5,7 +5,8 @@
     "paths": {
       "@/*": ["./src/*"]
     },
-    "incremental": true
+    "incremental": true,
+    "skipLibCheck": true
   },
   "include": ["next-env.d.ts", "src/**/*.ts", "src/**/*.tsx", ".next/types/**/*.ts"],
   "exclude": ["node_modules", ".next"]

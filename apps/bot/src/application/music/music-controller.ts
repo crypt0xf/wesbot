@@ -39,6 +39,8 @@ export interface ResolvedIdentifier {
   playlistName?: string;
 }
 
+type PublishFn = (channel: string, payload: unknown) => void;
+
 /**
  * Orchestrates per-guild music playback on top of Shoukaku. Holds the domain
  * session, resolves queries via Lavalink REST, wires player events to advance
@@ -51,7 +53,32 @@ export class MusicController {
     private readonly shoukaku: Shoukaku,
     private readonly logger: Logger,
     private readonly persistence?: QueuePersistence,
+    private readonly publish?: PublishFn,
   ) {}
+
+  private publishQueueState(guildId: string): void {
+    if (!this.publish) return;
+    const session = this.sessions.get(guildId);
+    if (!session) return;
+    const player = this.shoukaku.players.get(guildId);
+    this.publish(`events:music:${guildId}`, {
+      type: 'queue.updated',
+      guildId,
+      state: {
+        guildId,
+        voiceChannelId: session.voiceChannelId,
+        current: session.current,
+        tracks: [...session.queue],
+        history: [...session.history],
+        position: player?.position ?? 0,
+        isPaused: player?.paused ?? false,
+        volume: session.volume,
+        loop: session.loop,
+        autoplay: session.autoplay,
+      },
+      timestamp: Date.now(),
+    });
+  }
 
   getSession(guildId: string): GuildMusicSession | undefined {
     return this.sessions.get(guildId);
@@ -123,6 +150,7 @@ export class MusicController {
     }
 
     this.persist(session);
+    this.publishQueueState(input.guildId);
 
     return {
       kind,
@@ -169,23 +197,32 @@ export class MusicController {
     }
 
     this.persist(session);
+    this.publishQueueState(input.guildId);
     return { accepted, startedImmediately };
   }
 
   async pause(guildId: string): Promise<void> {
     const player = this.requirePlayer(guildId);
-    if (player.paused) {
-      return;
-    }
+    if (player.paused) return;
     await player.setPaused(true);
+    this.publish?.(`events:music:${guildId}`, {
+      type: 'player.paused',
+      guildId,
+      paused: true,
+      timestamp: Date.now(),
+    });
   }
 
   async resume(guildId: string): Promise<void> {
     const player = this.requirePlayer(guildId);
-    if (!player.paused) {
-      return;
-    }
+    if (!player.paused) return;
     await player.setPaused(false);
+    this.publish?.(`events:music:${guildId}`, {
+      type: 'player.paused',
+      guildId,
+      paused: false,
+      timestamp: Date.now(),
+    });
   }
 
   async skip(guildId: string): Promise<Track | null> {
@@ -248,6 +285,7 @@ export class MusicController {
     const session = this.requireSession(guildId);
     session.setLoop(mode);
     this.persist(session);
+    this.publishQueueState(guildId);
   }
 
   /**
@@ -270,6 +308,7 @@ export class MusicController {
     const session = this.requireSession(guildId);
     session.autoplay = enabled;
     this.persist(session);
+    this.publishQueueState(guildId);
   }
 
   async applyFilter(guildId: string, name: FilterName): Promise<void> {
@@ -315,13 +354,46 @@ export class MusicController {
   private attachPlayerEvents(player: Player): void {
     const guildId = player.guildId;
 
+    player.on('start', () => {
+      const session = this.sessions.get(guildId);
+      if (session?.current && this.publish) {
+        this.publish(`events:music:${guildId}`, {
+          type: 'track.started',
+          guildId,
+          track: session.current,
+          timestamp: Date.now(),
+        });
+      }
+    });
+
     player.on('end', (event) => {
       if (event.reason === 'replaced' || event.reason === 'stopped') {
         return;
       }
+      const session = this.sessions.get(guildId);
+      if (session?.current && this.publish) {
+        this.publish(`events:music:${guildId}`, {
+          type: 'track.ended',
+          guildId,
+          track: session.current,
+          reason: 'finished',
+          timestamp: Date.now(),
+        });
+      }
       void this.autoAdvance(guildId, event.reason).catch((err: unknown) => {
         this.logger.error({ err, guildId }, 'auto-advance failed');
       });
+    });
+
+    player.on('update', (update) => {
+      if (update.state.position !== undefined && this.publish) {
+        this.publish(`events:music:${guildId}`, {
+          type: 'player.position',
+          guildId,
+          positionMs: update.state.position,
+          timestamp: Date.now(),
+        });
+      }
     });
 
     player.on('exception', (event) => {
