@@ -45,17 +45,6 @@ lavalink:
     youtubePlaylistLoadLimit: 6
     playerUpdateInterval: 5
     gc-warnings: true
-  plugins:
-    youtube:
-      enabled: true
-      allowSearch: true
-      allowDirectVideoIds: true
-      allowDirectPlaylistIds: true
-      clients:
-        - MUSIC
-        - WEB
-        - ANDROID_MUSIC
-        - TVHTML5EMBEDDED
 
 metrics:
   prometheus:
