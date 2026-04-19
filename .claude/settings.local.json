@@ -69,7 +69,21 @@
       "Bash(where docker *)",
       "Bash(pnpm --filter @wesbot/database exec prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script)",
       "Read(//tmp/**)",
-      "Bash(pnpm lint *)"
+      "Bash(pnpm lint *)",
+      "Bash(pnpm --filter @wesbot/api typecheck)",
+      "Bash(pnpm --filter @wesbot/dashboard typecheck)",
+      "Bash(pnpm --filter @wesbot/api lint)",
+      "Bash(pnpm --filter @wesbot/api lint -- --fix)",
+      "Bash(pnpm --filter @wesbot/dashboard lint)",
+      "Bash(npx eslint *)",
+      "Bash(git -C C:/Users/wes/Documents/wesbot status packages/database/.env)",
+      "Bash(git -C C:/Users/wes/Documents/wesbot check-ignore -v packages/database/.env)",
+      "Bash(git -C C:/Users/wes/Documents/wesbot ls-files packages/database/.env)",
+      "Bash(pnpm --filter @wesbot/dashboard build)",
+      "Bash(pnpm --filter @wesbot/dashboard add socket.io-client zustand @dnd-kit/core @dnd-kit/sortable @dnd-kit/utilities @radix-ui/react-slider @radix-ui/react-progress @radix-ui/react-select)",
+      "Bash(pnpm --filter @wesbot/shared typecheck)",
+      "Bash(git -C /c/Users/wes/Documents/wesbot add -A)",
+      "Bash(git -C /c/Users/wes/Documents/wesbot status)"
     ]
   }
 }

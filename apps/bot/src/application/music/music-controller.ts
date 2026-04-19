@@ -320,6 +320,13 @@ export class MusicController {
     this.persist(session);
   }
 
+  reorder(guildId: string, fromIndex: number, toIndex: number): void {
+    const session = this.requireSession(guildId);
+    session.reorder(fromIndex, toIndex);
+    this.persist(session);
+    this.publishQueueState(guildId);
+  }
+
   private requireSession(guildId: string): GuildMusicSession {
     const session = this.sessions.get(guildId);
     if (!session) {

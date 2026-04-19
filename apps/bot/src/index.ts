@@ -9,6 +9,7 @@ import { GuildConfigService } from './application/settings/guild-config-service'
 import { createClient } from './client';
 import { createContainer } from './container';
 import { env } from './env';
+import { startBotCommandListener } from './infrastructure/bot-command-listener';
 import { registerCommands } from './infrastructure/command-registrar';
 import { startHealthServer } from './infrastructure/health-server';
 import { i18n } from './infrastructure/i18n';
@@ -64,6 +65,8 @@ const container = createContainer({
 
 registerEvents(client, container, registry);
 
+const commandListener = startBotCommandListener(redis, music, logger);
+
 const healthServer = startHealthServer({
   host: env.BOT_HEALTH_HOST,
   port: env.BOT_HEALTH_PORT,
@@ -83,6 +86,7 @@ async function shutdown(signal: string): Promise<void> {
   logger.info({ signal }, 'shutting down');
   healthServer.close();
   voiceWatcher.disposeAll();
+  commandListener.disconnect();
   await client.destroy();
   await prisma.$disconnect().catch((err: unknown) => {
     logger.warn({ err }, 'prisma disconnect failed');

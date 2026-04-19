@@ -2,6 +2,7 @@ import { cookies } from 'next/headers';
 import { notFound, redirect } from 'next/navigation';
 
 import { auth } from '../../../auth';
+import { PlayerBar } from '../../../components/player/player-bar';
 import { Sidebar } from '../../../components/sidebar/index';
 import { getGuildSettingsSSR } from '../../../lib/api';
 
@@ -42,6 +43,7 @@ export default async function GuildLayout({ children, params }: GuildLayoutProps
       <main className="flex-1 overflow-y-auto">
         {children}
       </main>
+      <PlayerBar guildId={guildId} />
     </div>
   );
 }

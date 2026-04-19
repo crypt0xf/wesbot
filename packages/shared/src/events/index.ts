@@ -87,6 +87,34 @@ export const botCommandSchema = z.discriminatedUnion('type', [
     userId: z.string(),
     volume: z.number().int().min(0).max(200),
   }),
+  z.object({
+    type: z.literal('music.loop'),
+    requestId: z.string(),
+    guildId: z.string(),
+    userId: z.string(),
+    mode: z.enum(['off', 'track', 'queue']),
+  }),
+  z.object({
+    type: z.literal('music.stop'),
+    requestId: z.string(),
+    guildId: z.string(),
+    userId: z.string(),
+  }),
+  z.object({
+    type: z.literal('music.filter'),
+    requestId: z.string(),
+    guildId: z.string(),
+    userId: z.string(),
+    filter: z.enum(['off', 'bassboost', 'nightcore', 'eightd']),
+  }),
+  z.object({
+    type: z.literal('music.reorder'),
+    requestId: z.string(),
+    guildId: z.string(),
+    userId: z.string(),
+    fromIndex: z.number().int().nonnegative(),
+    toIndex: z.number().int().nonnegative(),
+  }),
 ]);
 export type BotCommand = z.infer<typeof botCommandSchema>;
 

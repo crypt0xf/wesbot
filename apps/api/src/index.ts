@@ -18,6 +18,7 @@ import authPlugin from './plugins/auth';
 import redisPlugin from './plugins/redis';
 import { authRoutes } from './routes/auth';
 import { guildRoutes } from './routes/guilds';
+import { musicRoutes } from './routes/music';
 
 async function buildServer() {
   const app = Fastify({
@@ -54,6 +55,7 @@ async function buildServer() {
 
   authRoutes(app);
   guildRoutes(app, { prisma });
+  musicRoutes(app);
 
   // Socket.IO gateway is attached before listen; Redis bridge uses its own async connect
   const io = createSocketGateway(app, env.API_CORS_ORIGINS);
