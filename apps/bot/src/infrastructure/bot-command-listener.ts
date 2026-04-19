@@ -50,13 +50,14 @@ export function startBotCommandListener(
   music: MusicController,
   logger: Logger,
 ): Redis {
-  const sub = redis.duplicate();
+  const sub = redis.duplicate({ maxRetriesPerRequest: null });
 
   sub.on('error', (err) => logger.error({ err }, 'bot-command-listener redis error'));
-  sub.on('ready', () => logger.info('bot-command-listener ready'));
-
-  sub.subscribe('commands:bot', (err) => {
-    if (err) logger.error({ err }, 'failed to subscribe to commands:bot');
+  sub.on('ready', () => {
+    logger.info('bot-command-listener ready');
+    sub.subscribe('commands:bot', (err) => {
+      if (err) logger.error({ err }, 'failed to subscribe to commands:bot');
+    });
   });
 
   sub.on('message', (_channel, raw) => {

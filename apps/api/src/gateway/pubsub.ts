@@ -16,14 +16,17 @@ export function startPubSubBridge(
 ): Redis {
   const sub = new Redis(redisUrl, {
     lazyConnect: false,
-    maxRetriesPerRequest: 3,
+    maxRetriesPerRequest: null, // subscriber connections must never exhaust retries
     enableReadyCheck: true,
   });
 
   sub.on('error', (err) => logger.error({ err }, 'pubsub redis error'));
-  sub.on('ready', () => logger.info('pubsub redis ready'));
-
-  void sub.psubscribe('events:music:*', 'events:mod:*');
+  sub.on('ready', () => {
+    logger.info('pubsub redis ready');
+    sub.psubscribe('events:music:*', 'events:mod:*').catch((err: unknown) => {
+      logger.error({ err }, 'pubsub psubscribe failed');
+    });
+  });
 
   sub.on('pmessage', (_pattern: string, channel: string, message: string) => {
     try {
