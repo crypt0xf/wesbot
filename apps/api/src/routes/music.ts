@@ -54,7 +54,7 @@ async function publishAndAwait(
       resolve(result);
     }
     const sub = redis.duplicate();
-    sub.subscribe(replyChannel, (err) => {
+    void sub.subscribe(replyChannel, (err) => {
       if (err) {
         finish({ ok: false, error: 'subscribe failed' });
         return;

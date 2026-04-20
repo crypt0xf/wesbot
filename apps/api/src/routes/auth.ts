@@ -79,7 +79,7 @@ export function authRoutes(app: FastifyInstance): void {
       })();
 
       inFlight.set(cacheKey, promise);
-      promise.finally(() => inFlight.delete(cacheKey));
+      void promise.finally(() => inFlight.delete(cacheKey));
 
       try {
         return await promise;

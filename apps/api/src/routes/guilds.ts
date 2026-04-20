@@ -3,6 +3,7 @@ import { guildSettingsSchema } from '@wesbot/shared';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 
+import { env } from '../env';
 import { writeAuditLog } from '../lib/audit-log';
 import {
   DiscordApiError,
@@ -13,7 +14,6 @@ import {
   hasManageGuild,
   memberAvatarUrl,
 } from '../lib/discord-api';
-import { env } from '../env';
 
 const guildIdParamSchema = z.object({
   guildId: z.string().regex(/^\d{17,20}$/),

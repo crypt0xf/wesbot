@@ -379,12 +379,12 @@ export function moderationRoutes(app: FastifyInstance, { prisma }: { prisma: Pri
 
         const timer = setTimeout(() => finish({ ok: false, error: 'timeout' }), 6000);
 
-        sub.subscribe(replyChannel, (err) => {
+        void sub.subscribe(replyChannel, (err) => {
           if (err) {
             finish({ ok: false, error: 'subscribe failed' });
             return;
           }
-          app.redis.publish('commands:bot', payload).catch(() => undefined);
+          void app.redis.publish('commands:bot', payload).catch(() => undefined);
         });
 
         sub.on('message', (_ch: string, raw: string) => {
