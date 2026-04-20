@@ -36,14 +36,14 @@ export function UserMenu({ name, email, image, guildId }: UserMenuProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button className="flex w-full items-center gap-3 rounded-md p-2 text-left transition-colors hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+        <button className="hover:bg-secondary focus-visible:ring-ring flex w-full items-center gap-3 rounded-md p-2 text-left transition-colors focus-visible:outline-none focus-visible:ring-2">
           <Avatar className="h-8 w-8">
             {image && <AvatarImage src={image} alt={name} />}
             <AvatarFallback className="text-xs">{getInitials(name)}</AvatarFallback>
           </Avatar>
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-medium">{name}</p>
-            <p className="truncate text-xs text-muted-foreground">{email}</p>
+            <p className="text-muted-foreground truncate text-xs">{email}</p>
           </div>
         </button>
       </DropdownMenuTrigger>

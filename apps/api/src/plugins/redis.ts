@@ -20,10 +20,13 @@ const redisPlugin: FastifyPluginCallback<{ url: string }> = (app, { url }, done)
 
   app.decorate('redis', redis);
   app.addHook('onClose', (_instance, next) => {
-    redis.quit().then(() => next()).catch(() => {
-      redis.disconnect();
-      next();
-    });
+    redis
+      .quit()
+      .then(() => next())
+      .catch(() => {
+        redis.disconnect();
+        next();
+      });
   });
 
   done();

@@ -82,7 +82,13 @@ async function dispatch(
       const guild = await client.guilds.fetch(cmd.guildId);
       const target = await guild.members.fetch(cmd.targetUserId);
       await target.kick(cmd.reason);
-      await moderation.logAction(cmd.guildId, 'kick', cmd.targetUserId, cmd.moderatorId, cmd.reason);
+      await moderation.logAction(
+        cmd.guildId,
+        'kick',
+        cmd.targetUserId,
+        cmd.moderatorId,
+        cmd.reason,
+      );
       break;
     }
     case 'mod.ban': {
@@ -97,21 +103,40 @@ async function dispatch(
     case 'mod.unban': {
       const guild = await client.guilds.fetch(cmd.guildId);
       await guild.members.unban(cmd.targetUserId, cmd.reason);
-      await moderation.logAction(cmd.guildId, 'unban', cmd.targetUserId, cmd.moderatorId, cmd.reason);
+      await moderation.logAction(
+        cmd.guildId,
+        'unban',
+        cmd.targetUserId,
+        cmd.moderatorId,
+        cmd.reason,
+      );
       break;
     }
     case 'mod.timeout': {
       const guild = await client.guilds.fetch(cmd.guildId);
       const target = await guild.members.fetch(cmd.targetUserId);
       await target.timeout(cmd.durationSec * 1000, cmd.reason);
-      await moderation.logAction(cmd.guildId, 'timeout', cmd.targetUserId, cmd.moderatorId, cmd.reason, cmd.durationSec);
+      await moderation.logAction(
+        cmd.guildId,
+        'timeout',
+        cmd.targetUserId,
+        cmd.moderatorId,
+        cmd.reason,
+        cmd.durationSec,
+      );
       break;
     }
     case 'mod.untimeout': {
       const guild = await client.guilds.fetch(cmd.guildId);
       const target = await guild.members.fetch(cmd.targetUserId);
       await target.timeout(null, cmd.reason);
-      await moderation.logAction(cmd.guildId, 'untimeout', cmd.targetUserId, cmd.moderatorId, cmd.reason);
+      await moderation.logAction(
+        cmd.guildId,
+        'untimeout',
+        cmd.targetUserId,
+        cmd.moderatorId,
+        cmd.reason,
+      );
       break;
     }
   }
@@ -146,18 +171,16 @@ export function startBotCommandListener(
     const { requestId } = cmd;
     void dispatch(cmd, music, moderation, client)
       .then(() => {
-        redis.publish(
-          `replies:bot:${requestId}`,
-          JSON.stringify({ requestId, ok: true }),
-        ).catch((e: unknown) => logger.warn({ e }, 'reply publish failed'));
+        redis
+          .publish(`replies:bot:${requestId}`, JSON.stringify({ requestId, ok: true }))
+          .catch((e: unknown) => logger.warn({ e }, 'reply publish failed'));
       })
       .catch((err: unknown) => {
         const error = err instanceof Error ? err.message : 'unknown';
         logger.warn({ err, requestId, type: cmd.type }, 'bot command failed');
-        redis.publish(
-          `replies:bot:${requestId}`,
-          JSON.stringify({ requestId, ok: false, error }),
-        ).catch((e: unknown) => logger.warn({ e }, 'reply publish failed'));
+        redis
+          .publish(`replies:bot:${requestId}`, JSON.stringify({ requestId, ok: false, error }))
+          .catch((e: unknown) => logger.warn({ e }, 'reply publish failed'));
       });
   });
 

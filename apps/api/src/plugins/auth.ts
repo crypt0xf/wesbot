@@ -25,9 +25,7 @@ const authPlugin: FastifyPluginCallback<{ secret: string; secureCookie: boolean 
   { secret, secureCookie },
   done,
 ) => {
-  const cookieName = secureCookie
-    ? '__Secure-authjs.session-token'
-    : 'authjs.session-token';
+  const cookieName = secureCookie ? '__Secure-authjs.session-token' : 'authjs.session-token';
 
   async function extractUser(request: FastifyRequest): Promise<AuthUser | null> {
     const cookies = request.cookies as Record<string, string | undefined>;

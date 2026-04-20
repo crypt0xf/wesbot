@@ -1,10 +1,5 @@
 import { DEFAULT_LOCALE } from '@wesbot/shared';
-import {
-  PermissionFlagsBits,
-  SlashCommandBuilder,
-  TextChannel,
-  MessageFlags,
-} from 'discord.js';
+import { PermissionFlagsBits, SlashCommandBuilder, TextChannel, MessageFlags } from 'discord.js';
 
 import { i18n } from '../../../infrastructure/i18n';
 import type { SlashCommand } from '../../../types';
@@ -42,9 +37,7 @@ const purge: SlashCommand = {
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
     const messages = await interaction.channel.messages.fetch({ limit: amount });
-    const toDelete = filterUser
-      ? messages.filter((m) => m.author.id === filterUser.id)
-      : messages;
+    const toDelete = filterUser ? messages.filter((m) => m.author.id === filterUser.id) : messages;
 
     const deleted = await interaction.channel.bulkDelete(toDelete, true);
 

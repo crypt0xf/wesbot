@@ -4,7 +4,6 @@ import * as TooltipPrimitive from '@radix-ui/react-tooltip';
 import { cn } from '@wesbot/ui';
 import * as React from 'react';
 
-
 const TooltipProvider = TooltipPrimitive.Provider;
 const Tooltip = TooltipPrimitive.Root;
 const TooltipTrigger = TooltipPrimitive.Trigger;
@@ -18,7 +17,7 @@ const TooltipContent = React.forwardRef<
       ref={ref}
       sideOffset={sideOffset}
       className={cn(
-        'z-50 overflow-hidden rounded-md border bg-popover px-3 py-1.5 text-xs text-popover-foreground shadow-md animate-in fade-in-0 zoom-in-95',
+        'bg-popover text-popover-foreground animate-in fade-in-0 zoom-in-95 z-50 overflow-hidden rounded-md border px-3 py-1.5 text-xs shadow-md',
         className,
       )}
       {...props}

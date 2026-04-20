@@ -37,13 +37,17 @@ export function createSocketGateway(app: FastifyInstance, corsOrigins: string[])
         try {
           const p = JSON.parse(queueRaw ?? 'null') as PersistedQueue | null;
           if (p?.v === 1 && p.current) queue = p;
-        } catch { /* ignore */ }
+        } catch {
+          /* ignore */
+        }
 
         let persistedHistory: unknown[] = [];
         try {
           const h = JSON.parse(historyRaw ?? '[]') as unknown[];
           if (Array.isArray(h)) persistedHistory = h;
-        } catch { /* ignore */ }
+        } catch {
+          /* ignore */
+        }
 
         if (!queue && persistedHistory.length === 0) return;
 

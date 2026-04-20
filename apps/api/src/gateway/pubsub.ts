@@ -2,18 +2,13 @@ import { moderationEventSchema, musicEventSchema } from '@wesbot/shared';
 import Redis from 'ioredis';
 import type { Server as SocketIOServer } from 'socket.io';
 
-
 interface Logger {
   info: (msg: string) => void;
   warn: (obj: Record<string, unknown>, msg: string) => void;
   error: (obj: Record<string, unknown>, msg: string) => void;
 }
 
-export function startPubSubBridge(
-  redisUrl: string,
-  io: SocketIOServer,
-  logger: Logger,
-): Redis {
+export function startPubSubBridge(redisUrl: string, io: SocketIOServer, logger: Logger): Redis {
   const sub = new Redis(redisUrl, {
     lazyConnect: false,
     maxRetriesPerRequest: null, // subscriber connections must never exhaust retries

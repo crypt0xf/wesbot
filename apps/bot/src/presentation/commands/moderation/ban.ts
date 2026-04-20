@@ -51,9 +51,7 @@ const ban: SlashCommand = {
       reason,
     );
 
-    await interaction.editReply(
-      ctx.t('commands.ban.success', { user: target.toString(), reason }),
-    );
+    await interaction.editReply(ctx.t('commands.ban.success', { user: target.toString(), reason }));
   },
 };
 

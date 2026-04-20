@@ -48,9 +48,7 @@ const unban: SlashCommand = {
       reason,
     );
 
-    await interaction.editReply(
-      ctx.t('commands.unban.success', { user: `<@${userId}>` }),
-    );
+    await interaction.editReply(ctx.t('commands.unban.success', { user: `<@${userId}>` }));
   },
 };
 

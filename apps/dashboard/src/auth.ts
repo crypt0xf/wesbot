@@ -47,8 +47,7 @@ const config: NextAuthConfig = {
           accessToken: account.access_token,
           refreshToken: account.refresh_token,
           expiresAt:
-            account.expires_at ??
-            Math.floor(Date.now() / 1000) + (account.expires_in ?? 604800),
+            account.expires_at ?? Math.floor(Date.now() / 1000) + (account.expires_in ?? 604800),
         };
       }
 

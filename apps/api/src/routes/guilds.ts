@@ -4,7 +4,15 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 
 import { writeAuditLog } from '../lib/audit-log';
-import { DiscordApiError, fetchGuildMember, fetchGuildMembers, fetchUserGuilds, guildIconUrl, hasManageGuild, memberAvatarUrl } from '../lib/discord-api';
+import {
+  DiscordApiError,
+  fetchGuildMember,
+  fetchGuildMembers,
+  fetchUserGuilds,
+  guildIconUrl,
+  hasManageGuild,
+  memberAvatarUrl,
+} from '../lib/discord-api';
 import { env } from '../env';
 
 const guildIdParamSchema = z.object({
@@ -66,10 +74,7 @@ function serializeGuild(guild: {
   });
 }
 
-export function guildRoutes(
-  app: FastifyInstance,
-  { prisma }: { prisma: PrismaClient },
-): void {
+export function guildRoutes(app: FastifyInstance, { prisma }: { prisma: PrismaClient }): void {
   app.get(
     '/api/guilds/:guildId',
     {
@@ -83,11 +88,15 @@ export function guildRoutes(
 
       let discordGuild: { name: string; icon: string | null } | undefined;
       await assertGuildAccess(prisma, u.accessToken, guildId)
-        .then((g) => { discordGuild = g; })
+        .then((g) => {
+          discordGuild = g;
+        })
         .catch((e: unknown) => {
           if (e instanceof Error && e.message === 'Forbidden') reply.forbidden();
-          else if (e instanceof Error && e.message === 'TokenExpired') reply.unauthorized('Discord token expired');
-          else if (e instanceof Error && e.message === 'RateLimited') reply.tooManyRequests('Discord rate limit — try again in a moment');
+          else if (e instanceof Error && e.message === 'TokenExpired')
+            reply.unauthorized('Discord token expired');
+          else if (e instanceof Error && e.message === 'RateLimited')
+            reply.tooManyRequests('Discord rate limit — try again in a moment');
           else throw e;
         });
       if (reply.sent) return;
@@ -125,16 +134,15 @@ export function guildRoutes(
 
       await assertGuildAccess(prisma, u.accessToken, guildId).catch((e: unknown) => {
         if (e instanceof Error && e.message === 'Forbidden') reply.forbidden();
-        else if (e instanceof Error && e.message === 'TokenExpired') reply.unauthorized('Discord token expired');
-        else if (e instanceof Error && e.message === 'RateLimited') reply.tooManyRequests('Discord rate limit — try again in a moment');
+        else if (e instanceof Error && e.message === 'TokenExpired')
+          reply.unauthorized('Discord token expired');
+        else if (e instanceof Error && e.message === 'RateLimited')
+          reply.tooManyRequests('Discord rate limit — try again in a moment');
         else throw e;
       });
       if (reply.sent) return;
 
-      const update = guildSettingsSchema
-        .partial()
-        .omit({ id: true })
-        .parse(request.body);
+      const update = guildSettingsSchema.partial().omit({ id: true }).parse(request.body);
 
       const updated = await prisma.guild.update({
         where: { id: BigInt(guildId) },
@@ -183,7 +191,8 @@ export function guildRoutes(
     { preHandler: app.authenticate, schema: { params: guildIdParamSchema } },
     async (request, reply) => {
       const { guildId } = guildIdParamSchema.parse(request.params);
-      if (!env.DISCORD_TOKEN) return reply.status(503).send({ error: 'DISCORD_TOKEN not configured' });
+      if (!env.DISCORD_TOKEN)
+        return reply.status(503).send({ error: 'DISCORD_TOKEN not configured' });
       try {
         const members = await fetchGuildMembers(env.DISCORD_TOKEN, guildId);
         return members
@@ -196,7 +205,8 @@ export function guildRoutes(
             isBot: false,
           }));
       } catch (e) {
-        if (e instanceof DiscordApiError) return reply.status(e.status).send({ error: 'Discord API error' });
+        if (e instanceof DiscordApiError)
+          return reply.status(e.status).send({ error: 'Discord API error' });
         throw e;
       }
     },
@@ -215,11 +225,14 @@ export function guildRoutes(
       },
     },
     async (request, reply) => {
-      const { guildId, userId } = z.object({
-        guildId: z.string().regex(/^\d{17,20}$/),
-        userId: z.string().regex(/^\d{17,20}$/),
-      }).parse(request.params);
-      if (!env.DISCORD_TOKEN) return reply.status(503).send({ error: 'DISCORD_TOKEN not configured' });
+      const { guildId, userId } = z
+        .object({
+          guildId: z.string().regex(/^\d{17,20}$/),
+          userId: z.string().regex(/^\d{17,20}$/),
+        })
+        .parse(request.params);
+      if (!env.DISCORD_TOKEN)
+        return reply.status(503).send({ error: 'DISCORD_TOKEN not configured' });
       try {
         const m = await fetchGuildMember(env.DISCORD_TOKEN, guildId, userId);
         return {
@@ -231,7 +244,8 @@ export function guildRoutes(
           roles: m.roles,
         };
       } catch (e) {
-        if (e instanceof DiscordApiError) return reply.status(e.status).send({ error: 'Discord API error' });
+        if (e instanceof DiscordApiError)
+          return reply.status(e.status).send({ error: 'Discord API error' });
         throw e;
       }
     },

@@ -35,10 +35,8 @@ export default async function GuildLayout({ children, params }: GuildLayoutProps
           image: session.user.image,
         }}
       />
-      <div className="flex flex-1 flex-col min-h-0 overflow-hidden">
-        <main className="flex-1 overflow-y-auto">
-          {children}
-        </main>
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+        <main className="flex-1 overflow-y-auto">{children}</main>
         <PlayerBar guildId={guildId} />
       </div>
     </div>

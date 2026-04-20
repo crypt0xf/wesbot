@@ -26,15 +26,13 @@ async function assertGuildAccess(accessToken: string, guildId: string): Promise<
 function guardAccess(reply: { forbidden: () => unknown; unauthorized: (msg: string) => unknown }) {
   return (e: unknown) => {
     if (e instanceof Error && e.message === 'Forbidden') reply.forbidden();
-    else if (e instanceof Error && e.message === 'TokenExpired') reply.unauthorized('Discord token expired');
+    else if (e instanceof Error && e.message === 'TokenExpired')
+      reply.unauthorized('Discord token expired');
     else throw e;
   };
 }
 
-function publishCommand(
-  redis: FastifyInstance['redis'],
-  payload: Record<string, unknown>,
-): void {
+function publishCommand(redis: FastifyInstance['redis'], payload: Record<string, unknown>): void {
   void redis.publish('commands:bot', JSON.stringify(payload));
 }
 
@@ -57,11 +55,18 @@ async function publishAndAwait(
     }
     const sub = redis.duplicate();
     sub.subscribe(replyChannel, (err) => {
-      if (err) { finish({ ok: false, error: 'subscribe failed' }); return; }
+      if (err) {
+        finish({ ok: false, error: 'subscribe failed' });
+        return;
+      }
       void redis.publish('commands:bot', JSON.stringify(payload)).catch(() => undefined);
     });
     sub.on('message', (_ch, raw) => {
-      try { finish(JSON.parse(raw) as { ok: boolean; error?: string }); } catch { /* ignore */ }
+      try {
+        finish(JSON.parse(raw) as { ok: boolean; error?: string });
+      } catch {
+        /* ignore */
+      }
     });
     const timer = setTimeout(() => finish({ ok: false, error: 'timeout' }), timeoutMs);
   });
@@ -116,10 +121,18 @@ export function musicRoutes(app: FastifyInstance): void {
   // POST /api/guilds/:guildId/music/seek   body: { positionMs: number }
   app.post(
     '/api/guilds/:guildId/music/seek',
-    { ...baseOpts, schema: { ...baseOpts.schema, body: z.object({ positionMs: z.number().int().nonnegative() }) } },
+    {
+      ...baseOpts,
+      schema: {
+        ...baseOpts.schema,
+        body: z.object({ positionMs: z.number().int().nonnegative() }),
+      },
+    },
     async (request, reply) => {
       const { guildId } = guildIdParamSchema.parse(request.params);
-      const { positionMs } = z.object({ positionMs: z.number().int().nonnegative() }).parse(request.body);
+      const { positionMs } = z
+        .object({ positionMs: z.number().int().nonnegative() })
+        .parse(request.body);
       const u = request.user!;
       if (!u.accessToken) return reply.unauthorized();
       await assertGuildAccess(u.accessToken, guildId).catch(guardAccess(reply));
@@ -138,7 +151,10 @@ export function musicRoutes(app: FastifyInstance): void {
   // POST /api/guilds/:guildId/music/volume  body: { volume: number }
   app.post(
     '/api/guilds/:guildId/music/volume',
-    { ...baseOpts, schema: { ...baseOpts.schema, body: z.object({ volume: z.number().int().min(0).max(200) }) } },
+    {
+      ...baseOpts,
+      schema: { ...baseOpts.schema, body: z.object({ volume: z.number().int().min(0).max(200) }) },
+    },
     async (request, reply) => {
       const { guildId } = guildIdParamSchema.parse(request.params);
       const { volume } = z.object({ volume: z.number().int().min(0).max(200) }).parse(request.body);
@@ -160,7 +176,10 @@ export function musicRoutes(app: FastifyInstance): void {
   // POST /api/guilds/:guildId/music/loop   body: { mode: 'off'|'track'|'queue' }
   app.post(
     '/api/guilds/:guildId/music/loop',
-    { ...baseOpts, schema: { ...baseOpts.schema, body: z.object({ mode: z.enum(['off', 'track', 'queue']) }) } },
+    {
+      ...baseOpts,
+      schema: { ...baseOpts.schema, body: z.object({ mode: z.enum(['off', 'track', 'queue']) }) },
+    },
     async (request, reply) => {
       const { guildId } = guildIdParamSchema.parse(request.params);
       const { mode } = z.object({ mode: z.enum(['off', 'track', 'queue']) }).parse(request.body);
@@ -198,10 +217,18 @@ export function musicRoutes(app: FastifyInstance): void {
   // POST /api/guilds/:guildId/music/filter  body: { filter: FilterName }
   app.post(
     '/api/guilds/:guildId/music/filter',
-    { ...baseOpts, schema: { ...baseOpts.schema, body: z.object({ filter: z.enum(['off', 'bassboost', 'nightcore', 'eightd']) }) } },
+    {
+      ...baseOpts,
+      schema: {
+        ...baseOpts.schema,
+        body: z.object({ filter: z.enum(['off', 'bassboost', 'nightcore', 'eightd']) }),
+      },
+    },
     async (request, reply) => {
       const { guildId } = guildIdParamSchema.parse(request.params);
-      const { filter } = z.object({ filter: z.enum(['off', 'bassboost', 'nightcore', 'eightd']) }).parse(request.body);
+      const { filter } = z
+        .object({ filter: z.enum(['off', 'bassboost', 'nightcore', 'eightd']) })
+        .parse(request.body);
       const u = request.user!;
       if (!u.accessToken) return reply.unauthorized();
       await assertGuildAccess(u.accessToken, guildId).catch(guardAccess(reply));
@@ -220,13 +247,17 @@ export function musicRoutes(app: FastifyInstance): void {
   // POST /api/guilds/:guildId/music/play  body: { query: string }
   app.post(
     '/api/guilds/:guildId/music/play',
-    { ...baseOpts, schema: { ...baseOpts.schema, body: z.object({ query: z.string().min(1).max(500) }) } },
+    {
+      ...baseOpts,
+      schema: { ...baseOpts.schema, body: z.object({ query: z.string().min(1).max(500) }) },
+    },
     async (request, reply) => {
       const { guildId } = guildIdParamSchema.parse(request.params);
       const { query } = z.object({ query: z.string().min(1).max(500) }).parse(request.body);
       const u = request.user!;
       if (!u.accessToken) return reply.unauthorized();
-      if (!isSnowflake(u.id)) return reply.unauthorized('Sessão desatualizada. Faça logout e entre novamente.');
+      if (!isSnowflake(u.id))
+        return reply.unauthorized('Sessão desatualizada. Faça logout e entre novamente.');
       await assertGuildAccess(u.accessToken, guildId).catch(guardAccess(reply));
       if (reply.sent) return;
       const requestId = crypto.randomUUID();
@@ -240,7 +271,8 @@ export function musicRoutes(app: FastifyInstance): void {
       if (!result.ok) {
         const msg = result.error ?? 'unknown error';
         if (msg.includes('não está em uma chamada')) return reply.status(400).send({ error: msg });
-        if (msg.includes('noResults') || msg.includes('no results')) return reply.status(404).send({ error: 'Nenhum resultado encontrado.' });
+        if (msg.includes('noResults') || msg.includes('no results'))
+          return reply.status(404).send({ error: 'Nenhum resultado encontrado.' });
         return reply.status(500).send({ error: msg });
       }
       return reply.status(200).send({ ok: true });
@@ -252,7 +284,8 @@ export function musicRoutes(app: FastifyInstance): void {
     const { guildId } = guildIdParamSchema.parse(request.params);
     const u = request.user!;
     if (!u.accessToken) return reply.unauthorized();
-    if (!isSnowflake(u.id)) return reply.unauthorized('Sessão desatualizada. Faça logout e entre novamente.');
+    if (!isSnowflake(u.id))
+      return reply.unauthorized('Sessão desatualizada. Faça logout e entre novamente.');
     await assertGuildAccess(u.accessToken, guildId).catch(guardAccess(reply));
     if (reply.sent) return;
     const requestId = crypto.randomUUID();
@@ -286,7 +319,10 @@ export function musicRoutes(app: FastifyInstance): void {
     async (request, reply) => {
       const { guildId } = guildIdParamSchema.parse(request.params);
       const { fromIndex, toIndex } = z
-        .object({ fromIndex: z.number().int().nonnegative(), toIndex: z.number().int().nonnegative() })
+        .object({
+          fromIndex: z.number().int().nonnegative(),
+          toIndex: z.number().int().nonnegative(),
+        })
         .parse(request.body);
       const u = request.user!;
       if (!u.accessToken) return reply.unauthorized();

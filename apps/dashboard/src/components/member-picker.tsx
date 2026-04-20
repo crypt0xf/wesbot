@@ -19,7 +19,13 @@ interface MemberPickerProps {
   placeholder?: string;
 }
 
-export function MemberPicker({ guildId, value, onChange, onMemberSelect, placeholder = 'Buscar membro...' }: MemberPickerProps) {
+export function MemberPicker({
+  guildId,
+  value,
+  onChange,
+  onMemberSelect,
+  placeholder = 'Buscar membro...',
+}: MemberPickerProps) {
   const [members, setMembers] = useState<GuildMember[]>([]);
   const [query, setQuery] = useState('');
   const [open, setOpen] = useState(false);
@@ -29,7 +35,7 @@ export function MemberPicker({ guildId, value, onChange, onMemberSelect, placeho
   useEffect(() => {
     setLoading(true);
     fetch(`${API_URL}/api/guilds/${guildId}/members`, { credentials: 'include' })
-      .then((r) => r.ok ? r.json() as Promise<GuildMember[]> : [])
+      .then((r) => (r.ok ? (r.json() as Promise<GuildMember[]>) : []))
       .then(setMembers)
       .catch(() => setMembers([]))
       .finally(() => setLoading(false));
@@ -59,7 +65,7 @@ export function MemberPicker({ guildId, value, onChange, onMemberSelect, placeho
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="border-input bg-background flex w-full items-center gap-2 rounded-md border px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+        className="border-input bg-background focus:ring-ring flex w-full items-center gap-2 rounded-md border px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-1"
       >
         {selected ? (
           <>
@@ -83,7 +89,7 @@ export function MemberPicker({ guildId, value, onChange, onMemberSelect, placeho
           <div className="p-2">
             <input
               autoFocus
-              className="border-input bg-background w-full rounded border px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+              className="border-input bg-background focus:ring-ring w-full rounded border px-2 py-1 text-sm focus:outline-none focus:ring-1"
               placeholder="Buscar..."
               value={query}
               onChange={(e) => setQuery(e.target.value)}
@@ -98,7 +104,12 @@ export function MemberPicker({ guildId, value, onChange, onMemberSelect, placeho
                 <button
                   type="button"
                   className="hover:bg-accent flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm"
-                  onClick={() => { onChange(m.id); onMemberSelect?.(m); setQuery(''); setOpen(false); }}
+                  onClick={() => {
+                    onChange(m.id);
+                    onMemberSelect?.(m);
+                    setQuery('');
+                    setOpen(false);
+                  }}
                 >
                   {m.avatar ? (
                     <img src={m.avatar} alt="" className="h-6 w-6 rounded-full" />

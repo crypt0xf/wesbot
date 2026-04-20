@@ -1,18 +1,10 @@
 'use client';
 
 import { cn } from '@wesbot/ui';
-import {
-  LayoutDashboard,
-  Music,
-  Shield,
-  Settings,
-  Search,
-  ChevronLeft,
-} from 'lucide-react';
+import { LayoutDashboard, Music, Shield, Settings, Search, ChevronLeft } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import * as React from 'react';
-
 
 import { CommandPalette } from '../command-palette';
 import { TooltipProvider } from '../ui/tooltip';
@@ -33,16 +25,10 @@ interface NavItem {
 
 function GuildIcon({ icon, name }: { icon?: string | null; name: string }) {
   if (icon) {
-    return (
-      <img
-        src={icon}
-        alt={name}
-        className="h-8 w-8 rounded-full object-cover"
-      />
-    );
+    return <img src={icon} alt={name} className="h-8 w-8 rounded-full object-cover" />;
   }
   return (
-    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/20 text-xs font-bold text-primary">
+    <div className="bg-primary/20 text-primary flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold">
       {name.slice(0, 2).toUpperCase()}
     </div>
   );
@@ -130,20 +116,11 @@ export function Sidebar({ guildId, guildName, guildIcon, user }: SidebarProps) {
 
         {/* Footer */}
         <div className="border-border mt-auto border-t px-3 py-3">
-          <UserMenu
-            name={user.name}
-            email={user.email}
-            image={user.image}
-            guildId={guildId}
-          />
+          <UserMenu name={user.name} email={user.email} image={user.image} guildId={guildId} />
         </div>
       </aside>
 
-      <CommandPalette
-        open={paletteOpen}
-        onOpenChange={setPaletteOpen}
-        guildId={guildId}
-      />
+      <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} guildId={guildId} />
     </TooltipProvider>
   );
 }

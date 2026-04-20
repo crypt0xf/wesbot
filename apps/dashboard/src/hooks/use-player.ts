@@ -82,18 +82,11 @@ export function usePlayer(guildId: string) {
     [guildId],
   );
   const reorder = useCallback(
-    (fromIndex: number, toIndex: number) =>
-      musicPost(guildId, 'reorder', { fromIndex, toIndex }),
+    (fromIndex: number, toIndex: number) => musicPost(guildId, 'reorder', { fromIndex, toIndex }),
     [guildId],
   );
-  const play = useCallback(
-    (query: string) => musicPost(guildId, 'play', { query }),
-    [guildId],
-  );
-  const joinVoice = useCallback(
-    () => musicPost(guildId, 'join'),
-    [guildId],
-  );
+  const play = useCallback((query: string) => musicPost(guildId, 'play', { query }), [guildId]);
+  const joinVoice = useCallback(() => musicPost(guildId, 'join'), [guildId]);
 
   return {
     queue: store.queue,

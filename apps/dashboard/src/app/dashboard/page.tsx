@@ -46,12 +46,12 @@ function GuildCard({
         </p>
         <div className="mt-1 flex items-center justify-center gap-1">
           {owner && (
-            <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+            <Badge variant="outline" className="px-1.5 py-0 text-[10px]">
               Dono
             </Badge>
           )}
           {hasBot && (
-            <Badge variant="success" className="text-[10px] px-1.5 py-0">
+            <Badge variant="success" className="px-1.5 py-0 text-[10px]">
               Bot ativo
             </Badge>
           )}

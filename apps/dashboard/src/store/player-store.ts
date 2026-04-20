@@ -29,11 +29,9 @@ export const usePlayerStore = create<PlayerStore>((set) => ({
       lastPositionAt: Date.now(),
     }),
 
-  setPosition: (positionMs) =>
-    set({ positionMs, lastPositionAt: Date.now() }),
+  setPosition: (positionMs) => set({ positionMs, lastPositionAt: Date.now() }),
 
-  setPaused: (paused) =>
-    set((s) => ({ queue: s.queue ? { ...s.queue, isPaused: paused } : null })),
+  setPaused: (paused) => set((s) => ({ queue: s.queue ? { ...s.queue, isPaused: paused } : null })),
 
   clear: () => set({ queue: null, positionMs: 0, lastPositionAt: 0 }),
 }));

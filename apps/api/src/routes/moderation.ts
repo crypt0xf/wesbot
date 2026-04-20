@@ -50,7 +50,10 @@ export function moderationRoutes(app: FastifyInstance, { prisma }: { prisma: Pri
           type: z
             .enum(['warn', 'kick', 'ban', 'tempban', 'unban', 'timeout', 'untimeout', 'purge'])
             .optional(),
-          userId: z.string().regex(/^\d{17,20}$/).optional(),
+          userId: z
+            .string()
+            .regex(/^\d{17,20}$/)
+            .optional(),
           limit: z.coerce.number().int().min(1).max(100).default(50),
           cursor: z.string().optional(),
         }),
@@ -68,7 +71,10 @@ export function moderationRoutes(app: FastifyInstance, { prisma }: { prisma: Pri
           type: z
             .enum(['warn', 'kick', 'ban', 'tempban', 'unban', 'timeout', 'untimeout', 'purge'])
             .optional(),
-          userId: z.string().regex(/^\d{17,20}$/).optional(),
+          userId: z
+            .string()
+            .regex(/^\d{17,20}$/)
+            .optional(),
           limit: z.coerce.number().int().min(1).max(100).default(50),
           cursor: z.string().optional(),
         })
@@ -123,9 +129,7 @@ export function moderationRoutes(app: FastifyInstance, { prisma }: { prisma: Pri
       await assertGuildAccess(u.accessToken, guildId).catch(guardAccess(reply));
       if (reply.sent) return;
 
-      const { userId } = z
-        .object({ userId: z.string().regex(/^\d{17,20}$/) })
-        .parse(request.query);
+      const { userId } = z.object({ userId: z.string().regex(/^\d{17,20}$/) }).parse(request.query);
 
       const warns = await prisma.warn.findMany({
         where: { guildId: BigInt(guildId), userId: BigInt(userId), active: true },
@@ -225,8 +229,14 @@ export function moderationRoutes(app: FastifyInstance, { prisma }: { prisma: Pri
           enabled: z.boolean(),
           action: automodActionEnum,
           config: z.record(z.unknown()).optional().default({}),
-          exemptRoleIds: z.array(z.string().regex(/^\d{17,20}$/)).optional().default([]),
-          exemptChannelIds: z.array(z.string().regex(/^\d{17,20}$/)).optional().default([]),
+          exemptRoleIds: z
+            .array(z.string().regex(/^\d{17,20}$/))
+            .optional()
+            .default([]),
+          exemptChannelIds: z
+            .array(z.string().regex(/^\d{17,20}$/))
+            .optional()
+            .default([]),
         }),
       },
     },
@@ -239,8 +249,14 @@ export function moderationRoutes(app: FastifyInstance, { prisma }: { prisma: Pri
           enabled: z.boolean(),
           action: automodActionEnum,
           config: z.record(z.unknown()).optional().default({}),
-          exemptRoleIds: z.array(z.string().regex(/^\d{17,20}$/)).optional().default([]),
-          exemptChannelIds: z.array(z.string().regex(/^\d{17,20}$/)).optional().default([]),
+          exemptRoleIds: z
+            .array(z.string().regex(/^\d{17,20}$/))
+            .optional()
+            .default([]),
+          exemptChannelIds: z
+            .array(z.string().regex(/^\d{17,20}$/))
+            .optional()
+            .default([]),
         })
         .parse(request.body);
       const u = request.user!;
@@ -248,7 +264,9 @@ export function moderationRoutes(app: FastifyInstance, { prisma }: { prisma: Pri
       await assertGuildAccess(u.accessToken, guildId).catch(guardAccess(reply));
       if (reply.sent) return;
 
-      const configJson = body.config as Parameters<typeof prisma.automodRule.create>[0]['data']['config'];
+      const configJson = body.config as Parameters<
+        typeof prisma.automodRule.create
+      >[0]['data']['config'];
       const rule = await prisma.automodRule.upsert({
         where: { guildId_type: { guildId: BigInt(guildId), type } },
         update: {
@@ -283,12 +301,42 @@ export function moderationRoutes(app: FastifyInstance, { prisma }: { prisma: Pri
 
   // POST /api/guilds/:guildId/mod/actions  — publish command to bot and await result
   const modActionBodySchema = z.discriminatedUnion('type', [
-    z.object({ type: z.literal('warn'), targetUserId: z.string().regex(/^\d{17,20}$/), reason: z.string().min(1).max(512) }),
-    z.object({ type: z.literal('kick'), targetUserId: z.string().regex(/^\d{17,20}$/), reason: z.string().min(1).max(512) }),
-    z.object({ type: z.literal('ban'), targetUserId: z.string().regex(/^\d{17,20}$/), reason: z.string().min(1).max(512), deleteMessageDays: z.number().int().min(0).max(7).default(0) }),
-    z.object({ type: z.literal('unban'), targetUserId: z.string().regex(/^\d{17,20}$/), reason: z.string().min(1).max(512) }),
-    z.object({ type: z.literal('timeout'), targetUserId: z.string().regex(/^\d{17,20}$/), reason: z.string().min(1).max(512), durationSec: z.number().int().positive().max(28 * 86400) }),
-    z.object({ type: z.literal('untimeout'), targetUserId: z.string().regex(/^\d{17,20}$/), reason: z.string().min(1).max(512) }),
+    z.object({
+      type: z.literal('warn'),
+      targetUserId: z.string().regex(/^\d{17,20}$/),
+      reason: z.string().min(1).max(512),
+    }),
+    z.object({
+      type: z.literal('kick'),
+      targetUserId: z.string().regex(/^\d{17,20}$/),
+      reason: z.string().min(1).max(512),
+    }),
+    z.object({
+      type: z.literal('ban'),
+      targetUserId: z.string().regex(/^\d{17,20}$/),
+      reason: z.string().min(1).max(512),
+      deleteMessageDays: z.number().int().min(0).max(7).default(0),
+    }),
+    z.object({
+      type: z.literal('unban'),
+      targetUserId: z.string().regex(/^\d{17,20}$/),
+      reason: z.string().min(1).max(512),
+    }),
+    z.object({
+      type: z.literal('timeout'),
+      targetUserId: z.string().regex(/^\d{17,20}$/),
+      reason: z.string().min(1).max(512),
+      durationSec: z
+        .number()
+        .int()
+        .positive()
+        .max(28 * 86400),
+    }),
+    z.object({
+      type: z.literal('untimeout'),
+      targetUserId: z.string().regex(/^\d{17,20}$/),
+      reason: z.string().min(1).max(512),
+    }),
   ]);
 
   app.post(
@@ -298,7 +346,8 @@ export function moderationRoutes(app: FastifyInstance, { prisma }: { prisma: Pri
       const { guildId } = guildIdParamSchema.parse(request.params);
       const u = request.user!;
       if (!u.accessToken) return reply.unauthorized();
-      if (!/^\d{17,20}$/.test(u.id)) return reply.unauthorized('Sessão desatualizada. Faça logout e entre novamente.');
+      if (!/^\d{17,20}$/.test(u.id))
+        return reply.unauthorized('Sessão desatualizada. Faça logout e entre novamente.');
       await assertGuildAccess(u.accessToken, guildId).catch(guardAccess(reply));
       if (reply.sent) return;
 
@@ -331,7 +380,10 @@ export function moderationRoutes(app: FastifyInstance, { prisma }: { prisma: Pri
         const timer = setTimeout(() => finish({ ok: false, error: 'timeout' }), 6000);
 
         sub.subscribe(replyChannel, (err) => {
-          if (err) { finish({ ok: false, error: 'subscribe failed' }); return; }
+          if (err) {
+            finish({ ok: false, error: 'subscribe failed' });
+            return;
+          }
           app.redis.publish('commands:bot', payload).catch(() => undefined);
         });
 
@@ -346,9 +398,14 @@ export function moderationRoutes(app: FastifyInstance, { prisma }: { prisma: Pri
 
       if (!result.ok) {
         const msg = result.error ?? 'Action failed';
-        if (msg === 'timeout') return reply.status(504).send({ error: 'Bot não respondeu a tempo.' });
-        if (msg.includes('Missing Permissions')) return reply.status(403).send({ error: 'O bot não tem permissão para executar esta ação neste servidor.' });
-        if (msg.includes('Unknown Member') || msg.includes('Unknown User')) return reply.status(404).send({ error: 'Membro não encontrado.' });
+        if (msg === 'timeout')
+          return reply.status(504).send({ error: 'Bot não respondeu a tempo.' });
+        if (msg.includes('Missing Permissions'))
+          return reply
+            .status(403)
+            .send({ error: 'O bot não tem permissão para executar esta ação neste servidor.' });
+        if (msg.includes('Unknown Member') || msg.includes('Unknown User'))
+          return reply.status(404).send({ error: 'Membro não encontrado.' });
         return reply.status(500).send({ error: msg });
       }
 

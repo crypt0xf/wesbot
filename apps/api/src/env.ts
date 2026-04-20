@@ -8,7 +8,6 @@ import {
 import { config as loadEnv } from 'dotenv';
 import { z } from 'zod';
 
-
 loadEnv();
 
 const schema = baseEnvSchema

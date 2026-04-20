@@ -1,16 +1,7 @@
 'use client';
 
 import { cn } from '@wesbot/ui';
-import {
-  Pause,
-  Play,
-  Repeat,
-  Repeat1,
-  SkipForward,
-  Square,
-  Volume2,
-  VolumeX,
-} from 'lucide-react';
+import { Pause, Play, Repeat, Repeat1, SkipForward, Square, Volume2, VolumeX } from 'lucide-react';
 import Image from 'next/image';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
@@ -42,7 +33,9 @@ export function PlayerBar({ guildId }: PlayerBarProps) {
 
   useEffect(() => {
     isMounted.current = true;
-    return () => { isMounted.current = false; };
+    return () => {
+      isMounted.current = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -61,9 +54,10 @@ export function PlayerBar({ guildId }: PlayerBarProps) {
     return () => clearInterval(id);
   }, [isPaused, current]);
 
-  const livePositionMs = isPaused || !lastPositionAt
-    ? positionMs
-    : Math.min(duration || Infinity, positionMs + (Date.now() - lastPositionAt));
+  const livePositionMs =
+    isPaused || !lastPositionAt
+      ? positionMs
+      : Math.min(duration || Infinity, positionMs + (Date.now() - lastPositionAt));
 
   const displayPosition = draggingSeek ? seekValue : livePositionMs;
   const progress = duration > 0 ? Math.min(100, (displayPosition / duration) * 100) : 0;
@@ -85,7 +79,7 @@ export function PlayerBar({ guildId }: PlayerBarProps) {
 
   return (
     <TooltipProvider delayDuration={300}>
-      <div className="border-border bg-card/95 border-t backdrop-blur-sm shrink-0">
+      <div className="border-border bg-card/95 shrink-0 border-t backdrop-blur-sm">
         <div className="mx-auto flex max-w-screen-2xl items-center gap-4 px-4 py-2">
           {/* Track info */}
           <div className="flex min-w-0 flex-1 items-center gap-3">
@@ -125,9 +119,7 @@ export function PlayerBar({ guildId }: PlayerBarProps) {
                     )}
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>
-                  Loop: {loopMode}
-                </TooltipContent>
+                <TooltipContent>Loop: {loopMode}</TooltipContent>
               </Tooltip>
 
               <Button
@@ -139,12 +131,7 @@ export function PlayerBar({ guildId }: PlayerBarProps) {
                 {isPaused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
               </Button>
 
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7"
-                onClick={() => void skip()}
-              >
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => void skip()}>
                 <SkipForward className="h-4 w-4" />
               </Button>
 

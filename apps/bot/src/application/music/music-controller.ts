@@ -302,7 +302,9 @@ export class MusicController {
   private saveHistoryAsync(guildId: string, history: import('@wesbot/shared').Track[]): void {
     if (!this.statsRedis || history.length === 0) return;
     const key = `track_history:${guildId}`;
-    void this.statsRedis.set(key, JSON.stringify(history), 'EX', 7 * 24 * 3600).catch(() => undefined);
+    void this.statsRedis
+      .set(key, JSON.stringify(history), 'EX', 7 * 24 * 3600)
+      .catch(() => undefined);
   }
 
   async seek(guildId: string, positionMs: number): Promise<void> {
@@ -423,12 +425,15 @@ export class MusicController {
       if (this.statsRedis) {
         const date = new Date().toISOString().slice(0, 10);
         const key = `stats:songs:${guildId}:${date}`;
-        void this.statsRedis.incr(key).then(() => {
-          const d = new Date();
-          d.setDate(d.getDate() + 1);
-          d.setHours(0, 0, 0, 0);
-          void this.statsRedis!.expireat(key, Math.floor(d.getTime() / 1000));
-        }).catch(() => undefined);
+        void this.statsRedis
+          .incr(key)
+          .then(() => {
+            const d = new Date();
+            d.setDate(d.getDate() + 1);
+            d.setHours(0, 0, 0, 0);
+            void this.statsRedis!.expireat(key, Math.floor(d.getTime() / 1000));
+          })
+          .catch(() => undefined);
       }
     });
 

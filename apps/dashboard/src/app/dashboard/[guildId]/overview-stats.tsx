@@ -13,7 +13,17 @@ interface Stats {
   botMembers: number;
 }
 
-function StatCard({ label, value, sub, icon }: { label: string; value: string; sub?: string; icon: React.ReactNode }) {
+function StatCard({
+  label,
+  value,
+  sub,
+  icon,
+}: {
+  label: string;
+  value: string;
+  sub?: string;
+  icon: React.ReactNode;
+}) {
   return (
     <div className="bg-card border-border rounded-xl border p-5">
       <div className="flex items-center justify-between">
@@ -34,17 +44,24 @@ export function OverviewStats({ guildId, initial }: { guildId: string; initial: 
 
     async function load() {
       try {
-        const res = await fetch(`${API_URL}/api/guilds/${guildId}/stats`, { credentials: 'include' });
-        if (res.ok && !cancelled) setStats(await res.json() as Stats);
-      } catch { /* ignore */ }
+        const res = await fetch(`${API_URL}/api/guilds/${guildId}/stats`, {
+          credentials: 'include',
+        });
+        if (res.ok && !cancelled) setStats((await res.json()) as Stats);
+      } catch {
+        /* ignore */
+      }
     }
 
     void load();
     const id = setInterval(() => void load(), 30_000);
-    return () => { cancelled = true; clearInterval(id); };
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
   }, [guildId]);
 
-  const fmt = (n: number | undefined) => n !== undefined ? String(n) : '—';
+  const fmt = (n: number | undefined) => (n !== undefined ? String(n) : '—');
 
   return (
     <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
@@ -63,7 +80,11 @@ export function OverviewStats({ guildId, initial }: { guildId: string; initial: 
       <StatCard
         label="Membros do servidor"
         value={fmt(stats?.totalMembers)}
-        sub={stats ? `${stats.botMembers} bots · ${stats.totalMembers - stats.botMembers} humanos` : undefined}
+        sub={
+          stats
+            ? `${stats.botMembers} bots · ${stats.totalMembers - stats.botMembers} humanos`
+            : undefined
+        }
         icon={<Users className="h-4 w-4" />}
       />
       <StatCard

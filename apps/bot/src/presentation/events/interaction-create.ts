@@ -73,12 +73,14 @@ export function createInteractionCreateHandler(
           const gid = interaction.guildId;
           const uid = interaction.user.id;
           void Promise.all([
-            container.redis.incr(`stats:commands:${gid}:${date}`).then(() =>
-              container.redis.expireat(`stats:commands:${gid}:${date}`, tomorrowUnix()),
-            ),
-            container.redis.sadd(`stats:active:${gid}:${date}`, uid).then(() =>
-              container.redis.expireat(`stats:active:${gid}:${date}`, tomorrowUnix()),
-            ),
+            container.redis
+              .incr(`stats:commands:${gid}:${date}`)
+              .then(() =>
+                container.redis.expireat(`stats:commands:${gid}:${date}`, tomorrowUnix()),
+              ),
+            container.redis
+              .sadd(`stats:active:${gid}:${date}`, uid)
+              .then(() => container.redis.expireat(`stats:active:${gid}:${date}`, tomorrowUnix())),
           ]).catch(() => undefined);
         }
       } catch (err) {

@@ -38,8 +38,9 @@ interface QueueRowProps {
 }
 
 function QueueRow({ track, index, onRemove }: QueueRowProps) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
-    useSortable({ id: track.identifier + index });
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: track.identifier + index,
+  });
 
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),

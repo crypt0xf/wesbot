@@ -115,9 +115,11 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   if (!res.ok) {
     let msg = `API ${res.status}`;
     try {
-      const body = await res.json() as { error?: string };
+      const body = (await res.json()) as { error?: string };
       if (body.error) msg = body.error;
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
     throw new Error(msg);
   }
   return res.json() as Promise<T>;
@@ -259,7 +261,9 @@ export function ModerationClient({ guildId }: ModerationClientProps) {
       const [warns, logs, detail] = await Promise.allSettled([
         apiFetch<Warn[]>(`/api/guilds/${guildId}/mod/warns?userId=${userId}`),
         apiFetch<{ items: ModLog[] }>(`/api/guilds/${guildId}/mod/logs?userId=${userId}&limit=50`),
-        apiFetch<{ joinedAt: string | null; roles: string[] }>(`/api/guilds/${guildId}/members/${userId}`),
+        apiFetch<{ joinedAt: string | null; roles: string[] }>(
+          `/api/guilds/${guildId}/members/${userId}`,
+        ),
       ]);
       if (warns.status === 'fulfilled') setMemberWarns(warns.value);
       if (logs.status === 'fulfilled') setMemberLogs(logs.value.items);
@@ -286,19 +290,16 @@ export function ModerationClient({ guildId }: ModerationClientProps) {
     const action: AutomodAction = (current?.action as AutomodAction) ?? 'delete';
     setAutomodSaving(type);
     try {
-      const updated = await apiFetch<AutomodRule>(
-        `/api/guilds/${guildId}/mod/automod/${type}`,
-        {
-          method: 'PUT',
-          body: JSON.stringify({
-            enabled: newEnabled,
-            action,
-            config: current?.config ?? {},
-            exemptRoleIds: current?.exemptRoleIds ?? [],
-            exemptChannelIds: current?.exemptChannelIds ?? [],
-          }),
-        },
-      );
+      const updated = await apiFetch<AutomodRule>(`/api/guilds/${guildId}/mod/automod/${type}`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          enabled: newEnabled,
+          action,
+          config: current?.config ?? {},
+          exemptRoleIds: current?.exemptRoleIds ?? [],
+          exemptChannelIds: current?.exemptChannelIds ?? [],
+        }),
+      });
       setAutomodRules((prev) => {
         const idx = prev.findIndex((r) => r.type === type);
         if (idx === -1) return [...prev, updated];
@@ -315,19 +316,16 @@ export function ModerationClient({ guildId }: ModerationClientProps) {
     const current = getRuleForType(type);
     setAutomodSaving(type);
     try {
-      const updated = await apiFetch<AutomodRule>(
-        `/api/guilds/${guildId}/mod/automod/${type}`,
-        {
-          method: 'PUT',
-          body: JSON.stringify({
-            enabled: current?.enabled ?? false,
-            action,
-            config: current?.config ?? {},
-            exemptRoleIds: current?.exemptRoleIds ?? [],
-            exemptChannelIds: current?.exemptChannelIds ?? [],
-          }),
-        },
-      );
+      const updated = await apiFetch<AutomodRule>(`/api/guilds/${guildId}/mod/automod/${type}`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          enabled: current?.enabled ?? false,
+          action,
+          config: current?.config ?? {},
+          exemptRoleIds: current?.exemptRoleIds ?? [],
+          exemptChannelIds: current?.exemptChannelIds ?? [],
+        }),
+      });
       setAutomodRules((prev) => {
         const idx = prev.findIndex((r) => r.type === type);
         if (idx === -1) return [...prev, updated];
@@ -348,10 +346,10 @@ export function ModerationClient({ guildId }: ModerationClientProps) {
   ];
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6 p-6">
       <div>
         <h1 className="text-2xl font-bold">Moderação</h1>
-        <p className="text-muted-foreground text-sm mt-1">
+        <p className="text-muted-foreground mt-1 text-sm">
           Gerencie ações de moderação, avisos e regras automáticas.
         </p>
       </div>
@@ -363,10 +361,10 @@ export function ModerationClient({ guildId }: ModerationClientProps) {
             key={t.id}
             onClick={() => setTab(t.id)}
             className={cn(
-              'px-4 py-2 text-sm font-medium border-b-2 transition-colors',
+              'border-b-2 px-4 py-2 text-sm font-medium transition-colors',
               tab === t.id
                 ? 'border-primary text-primary'
-                : 'border-transparent text-muted-foreground hover:text-foreground',
+                : 'text-muted-foreground hover:text-foreground border-transparent',
             )}
           >
             {t.label}
@@ -383,41 +381,41 @@ export function ModerationClient({ guildId }: ModerationClientProps) {
 
           <div className="space-y-3">
             <div>
-              <label className="mb-1 block text-xs font-medium text-muted-foreground">Ação</label>
+              <label className="text-muted-foreground mb-1 block text-xs font-medium">Ação</label>
               <select
                 value={actionType}
                 onChange={(e) => setActionType(e.target.value as ActionType)}
                 className="border-border bg-background w-full rounded-md border px-3 py-2 text-sm"
               >
                 {ACTION_TYPES.map((a) => (
-                  <option key={a.value} value={a.value}>{a.label}</option>
+                  <option key={a.value} value={a.value}>
+                    {a.label}
+                  </option>
                 ))}
               </select>
             </div>
 
             <div>
-              <label className="mb-1 block text-xs font-medium text-muted-foreground">Membro</label>
-              <MemberPicker
-                guildId={guildId}
-                value={actionTargetId}
-                onChange={setActionTargetId}
-              />
+              <label className="text-muted-foreground mb-1 block text-xs font-medium">Membro</label>
+              <MemberPicker guildId={guildId} value={actionTargetId} onChange={setActionTargetId} />
             </div>
 
             {ACTION_TYPES.find((a) => a.value === actionType)?.needsDuration && (
               <div>
-                <label className="mb-1 block text-xs font-medium text-muted-foreground">Duração (ex: 10m, 1h, 1d)</label>
+                <label className="text-muted-foreground mb-1 block text-xs font-medium">
+                  Duração (ex: 10m, 1h, 1d)
+                </label>
                 <input
                   type="text"
                   value={actionDuration}
                   onChange={(e) => setActionDuration(e.target.value)}
-                  className="border-border bg-background w-full rounded-md border px-3 py-2 text-sm font-mono"
+                  className="border-border bg-background w-full rounded-md border px-3 py-2 font-mono text-sm"
                 />
               </div>
             )}
 
             <div>
-              <label className="mb-1 block text-xs font-medium text-muted-foreground">Motivo</label>
+              <label className="text-muted-foreground mb-1 block text-xs font-medium">Motivo</label>
               <input
                 type="text"
                 value={actionReason}
@@ -430,7 +428,9 @@ export function ModerationClient({ guildId }: ModerationClientProps) {
 
             <Button
               onClick={() => void executeAction()}
-              disabled={actionLoading || !/^\d{17,20}$/.test(actionTargetId) || !actionReason.trim()}
+              disabled={
+                actionLoading || !/^\d{17,20}$/.test(actionTargetId) || !actionReason.trim()
+              }
             >
               {actionLoading ? 'Enviando...' : 'Executar'}
             </Button>
@@ -467,50 +467,59 @@ export function ModerationClient({ guildId }: ModerationClientProps) {
             <Button
               size="sm"
               variant="outline"
-              onClick={() => { setLogs([]); setLogCursor(undefined); void loadLogs(); }}
+              onClick={() => {
+                setLogs([]);
+                setLogCursor(undefined);
+                void loadLogs();
+              }}
               disabled={logLoading}
             >
               <RefreshCw className={cn('h-3.5 w-3.5', logLoading && 'animate-spin')} />
             </Button>
           </div>
 
-          <div className="rounded-lg border border-border overflow-hidden">
+          <div className="border-border overflow-hidden rounded-lg border">
             <table className="w-full text-sm">
               <thead className="bg-muted/50">
                 <tr>
-                  <th className="px-4 py-2 text-left font-medium text-muted-foreground">Ação</th>
-                  <th className="px-4 py-2 text-left font-medium text-muted-foreground">Alvo</th>
-                  <th className="px-4 py-2 text-left font-medium text-muted-foreground">Moderador</th>
-                  <th className="px-4 py-2 text-left font-medium text-muted-foreground">Motivo</th>
-                  <th className="px-4 py-2 text-left font-medium text-muted-foreground">Data</th>
+                  <th className="text-muted-foreground px-4 py-2 text-left font-medium">Ação</th>
+                  <th className="text-muted-foreground px-4 py-2 text-left font-medium">Alvo</th>
+                  <th className="text-muted-foreground px-4 py-2 text-left font-medium">
+                    Moderador
+                  </th>
+                  <th className="text-muted-foreground px-4 py-2 text-left font-medium">Motivo</th>
+                  <th className="text-muted-foreground px-4 py-2 text-left font-medium">Data</th>
                 </tr>
               </thead>
               <tbody>
                 {logs.length === 0 && !logLoading && (
                   <tr>
-                    <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
+                    <td colSpan={5} className="text-muted-foreground px-4 py-8 text-center">
                       Nenhuma ação registrada.
                     </td>
                   </tr>
                 )}
                 {logs.map((log) => (
-                  <tr key={log.id} className="border-t border-border hover:bg-muted/30 transition-colors">
+                  <tr
+                    key={log.id}
+                    className="border-border hover:bg-muted/30 border-t transition-colors"
+                  >
                     <td className="px-4 py-2.5">
                       <span className={cn('font-medium', ACTION_COLORS[log.type])}>
                         {ACTION_LABELS[log.type]}
                         {formatDuration(log.durationSec)}
                       </span>
                     </td>
-                    <td className="px-4 py-2.5 font-mono text-xs text-muted-foreground">
+                    <td className="text-muted-foreground px-4 py-2.5 font-mono text-xs">
                       {log.targetUserId}
                     </td>
-                    <td className="px-4 py-2.5 font-mono text-xs text-muted-foreground">
+                    <td className="text-muted-foreground px-4 py-2.5 font-mono text-xs">
                       {log.moderatorId}
                     </td>
-                    <td className="px-4 py-2.5 text-muted-foreground max-w-xs truncate">
+                    <td className="text-muted-foreground max-w-xs truncate px-4 py-2.5">
                       {log.reason ?? '—'}
                     </td>
-                    <td className="px-4 py-2.5 text-xs text-muted-foreground whitespace-nowrap">
+                    <td className="text-muted-foreground whitespace-nowrap px-4 py-2.5 text-xs">
                       {formatDate(log.createdAt)}
                     </td>
                   </tr>
@@ -536,7 +545,7 @@ export function ModerationClient({ guildId }: ModerationClientProps) {
 
       {/* Member Analysis */}
       {tab === 'member' && (
-        <div className="space-y-5 max-w-2xl">
+        <div className="max-w-2xl space-y-5">
           <p className="text-muted-foreground text-sm">
             Selecione um membro para ver seu perfil, punições e avisos ativos.
           </p>
@@ -546,44 +555,54 @@ export function ModerationClient({ guildId }: ModerationClientProps) {
             value={memberUserId}
             onMemberSelect={(m) => {
               setMemberInfo(m);
-              if (!m) { setMemberUserId(''); setMemberSearched(false); return; }
+              if (!m) {
+                setMemberUserId('');
+                setMemberSearched(false);
+                return;
+              }
               setMemberUserId(m.id);
               void loadMemberData(m.id);
             }}
             onChange={(id) => {
-              if (!id) { setMemberUserId(''); setMemberInfo(null); setMemberSearched(false); }
+              if (!id) {
+                setMemberUserId('');
+                setMemberInfo(null);
+                setMemberSearched(false);
+              }
             }}
             placeholder="Selecionar membro..."
           />
 
           {memberLoading && (
-            <p className="text-muted-foreground text-sm text-center py-4">Carregando dados...</p>
+            <p className="text-muted-foreground py-4 text-center text-sm">Carregando dados...</p>
           )}
 
           {!memberLoading && memberSearched && memberInfo && (
             <div className="space-y-4">
               {/* Profile card */}
-              <div className="bg-card border-border rounded-xl border p-5 flex items-center gap-4">
+              <div className="bg-card border-border flex items-center gap-4 rounded-xl border p-5">
                 {memberInfo.avatar ? (
-                  <img src={memberInfo.avatar} alt="" className="h-14 w-14 rounded-full shrink-0" />
+                  <img src={memberInfo.avatar} alt="" className="h-14 w-14 shrink-0 rounded-full" />
                 ) : (
                   <div className="bg-muted flex h-14 w-14 shrink-0 items-center justify-center rounded-full">
-                    <User className="h-7 w-7 text-muted-foreground" />
+                    <User className="text-muted-foreground h-7 w-7" />
                   </div>
                 )}
                 <div className="min-w-0 flex-1">
-                  <p className="font-semibold text-lg truncate">{memberInfo.displayName}</p>
+                  <p className="truncate text-lg font-semibold">{memberInfo.displayName}</p>
                   <p className="text-muted-foreground text-sm">@{memberInfo.username}</p>
-                  <p className="text-muted-foreground text-xs font-mono mt-0.5">{memberInfo.id}</p>
+                  <p className="text-muted-foreground mt-0.5 font-mono text-xs">{memberInfo.id}</p>
                 </div>
-                <div className="text-right text-xs text-muted-foreground space-y-1 shrink-0">
+                <div className="text-muted-foreground shrink-0 space-y-1 text-right text-xs">
                   <p>Conta criada em</p>
-                  <p className="font-medium text-foreground">{snowflakeToDate(memberInfo.id)}</p>
+                  <p className="text-foreground font-medium">{snowflakeToDate(memberInfo.id)}</p>
                   {memberJoinedAt && (
                     <>
                       <p className="mt-1">Entrou em</p>
-                      <p className="font-medium text-foreground">
-                        {new Date(memberJoinedAt).toLocaleDateString('pt-BR', { dateStyle: 'long' })}
+                      <p className="text-foreground font-medium">
+                        {new Date(memberJoinedAt).toLocaleDateString('pt-BR', {
+                          dateStyle: 'long',
+                        })}
                       </p>
                     </>
                   )}
@@ -594,46 +613,72 @@ export function ModerationClient({ guildId }: ModerationClientProps) {
               <div className="grid grid-cols-3 gap-3">
                 {[
                   { label: 'Punições totais', value: memberLogs.length },
-                  { label: 'Avisos ativos', value: memberWarns.length, accent: memberWarns.length > 0 },
+                  {
+                    label: 'Avisos ativos',
+                    value: memberWarns.length,
+                    accent: memberWarns.length > 0,
+                  },
                   { label: 'Cargos', value: memberRoles.length },
                 ].map(({ label, value, accent }) => (
-                  <div key={label} className="bg-card border-border rounded-lg border p-3 text-center">
-                    <p className={cn('text-2xl font-bold', accent && value > 0 ? 'text-yellow-500' : '')}>{value}</p>
-                    <p className="text-muted-foreground text-xs mt-0.5">{label}</p>
+                  <div
+                    key={label}
+                    className="bg-card border-border rounded-lg border p-3 text-center"
+                  >
+                    <p
+                      className={cn(
+                        'text-2xl font-bold',
+                        accent && value > 0 ? 'text-yellow-500' : '',
+                      )}
+                    >
+                      {value}
+                    </p>
+                    <p className="text-muted-foreground mt-0.5 text-xs">{label}</p>
                   </div>
                 ))}
               </div>
 
               {/* Punishment history */}
               <div>
-                <h3 className="text-sm font-semibold flex items-center gap-2 mb-2">
-                  <ShieldAlert className="h-4 w-4 text-muted-foreground" />
+                <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold">
+                  <ShieldAlert className="text-muted-foreground h-4 w-4" />
                   Histórico de punições
                 </h3>
                 {memberLogs.length === 0 ? (
-                  <p className="text-muted-foreground text-sm py-3 text-center">Nenhuma punição registrada.</p>
+                  <p className="text-muted-foreground py-3 text-center text-sm">
+                    Nenhuma punição registrada.
+                  </p>
                 ) : (
-                  <div className="rounded-lg border border-border overflow-hidden">
+                  <div className="border-border overflow-hidden rounded-lg border">
                     <table className="w-full text-sm">
                       <thead className="bg-muted/50">
                         <tr>
-                          <th className="px-3 py-2 text-left font-medium text-muted-foreground">Ação</th>
-                          <th className="px-3 py-2 text-left font-medium text-muted-foreground">Motivo</th>
-                          <th className="px-3 py-2 text-left font-medium text-muted-foreground">Data</th>
+                          <th className="text-muted-foreground px-3 py-2 text-left font-medium">
+                            Ação
+                          </th>
+                          <th className="text-muted-foreground px-3 py-2 text-left font-medium">
+                            Motivo
+                          </th>
+                          <th className="text-muted-foreground px-3 py-2 text-left font-medium">
+                            Data
+                          </th>
                         </tr>
                       </thead>
                       <tbody>
                         {memberLogs.map((log) => (
-                          <tr key={log.id} className="border-t border-border hover:bg-muted/30 transition-colors">
+                          <tr
+                            key={log.id}
+                            className="border-border hover:bg-muted/30 border-t transition-colors"
+                          >
                             <td className="px-3 py-2">
-                              <span className={cn('font-medium text-xs', ACTION_COLORS[log.type])}>
-                                {ACTION_LABELS[log.type]}{formatDuration(log.durationSec)}
+                              <span className={cn('text-xs font-medium', ACTION_COLORS[log.type])}>
+                                {ACTION_LABELS[log.type]}
+                                {formatDuration(log.durationSec)}
                               </span>
                             </td>
-                            <td className="px-3 py-2 max-w-xs truncate text-muted-foreground text-xs">
+                            <td className="text-muted-foreground max-w-xs truncate px-3 py-2 text-xs">
                               {log.reason ?? '—'}
                             </td>
-                            <td className="px-3 py-2 text-xs text-muted-foreground whitespace-nowrap">
+                            <td className="text-muted-foreground whitespace-nowrap px-3 py-2 text-xs">
                               {formatDate(log.createdAt)}
                             </td>
                           </tr>
@@ -646,33 +691,48 @@ export function ModerationClient({ guildId }: ModerationClientProps) {
 
               {/* Active warns */}
               <div>
-                <h3 className="text-sm font-semibold flex items-center gap-2 mb-2">
+                <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold">
                   <ShieldAlert className="h-4 w-4 text-yellow-500" />
                   Avisos ativos
                 </h3>
                 {memberWarns.length === 0 ? (
-                  <p className="text-muted-foreground text-sm py-3 text-center">Nenhum aviso ativo.</p>
+                  <p className="text-muted-foreground py-3 text-center text-sm">
+                    Nenhum aviso ativo.
+                  </p>
                 ) : (
-                  <div className="rounded-lg border border-border overflow-hidden">
+                  <div className="border-border overflow-hidden rounded-lg border">
                     <table className="w-full text-sm">
                       <thead className="bg-muted/50">
                         <tr>
-                          <th className="px-3 py-2 text-left font-medium text-muted-foreground">Motivo</th>
-                          <th className="px-3 py-2 text-left font-medium text-muted-foreground">Moderador</th>
-                          <th className="px-3 py-2 text-left font-medium text-muted-foreground">Data</th>
+                          <th className="text-muted-foreground px-3 py-2 text-left font-medium">
+                            Motivo
+                          </th>
+                          <th className="text-muted-foreground px-3 py-2 text-left font-medium">
+                            Moderador
+                          </th>
+                          <th className="text-muted-foreground px-3 py-2 text-left font-medium">
+                            Data
+                          </th>
                           <th className="px-3 py-2" />
                         </tr>
                       </thead>
                       <tbody>
                         {memberWarns.map((w) => (
-                          <tr key={w.id} className="border-t border-border hover:bg-muted/30 transition-colors">
-                            <td className="px-3 py-2 max-w-xs truncate">{w.reason}</td>
-                            <td className="px-3 py-2 font-mono text-xs text-muted-foreground">{w.moderatorId}</td>
-                            <td className="px-3 py-2 text-xs text-muted-foreground whitespace-nowrap">{formatDate(w.createdAt)}</td>
+                          <tr
+                            key={w.id}
+                            className="border-border hover:bg-muted/30 border-t transition-colors"
+                          >
+                            <td className="max-w-xs truncate px-3 py-2">{w.reason}</td>
+                            <td className="text-muted-foreground px-3 py-2 font-mono text-xs">
+                              {w.moderatorId}
+                            </td>
+                            <td className="text-muted-foreground whitespace-nowrap px-3 py-2 text-xs">
+                              {formatDate(w.createdAt)}
+                            </td>
                             <td className="px-3 py-2">
                               <button
                                 onClick={() => void removeWarn(w.id)}
-                                className="text-muted-foreground hover:text-red-500 transition-colors"
+                                className="text-muted-foreground transition-colors hover:text-red-500"
                                 title="Remover aviso"
                               >
                                 <Trash2 className="h-4 w-4" />
@@ -694,7 +754,7 @@ export function ModerationClient({ guildId }: ModerationClientProps) {
       {tab === 'automod' && (
         <div className="space-y-3">
           {automodLoading && (
-            <p className="text-muted-foreground text-sm text-center py-4">Carregando...</p>
+            <p className="text-muted-foreground py-4 text-center text-sm">Carregando...</p>
           )}
           {!automodLoading &&
             AUTOMOD_RULES.map(({ type, label, description }) => {
@@ -707,9 +767,9 @@ export function ModerationClient({ guildId }: ModerationClientProps) {
                   key={type}
                   className="border-border bg-card flex items-center gap-4 rounded-lg border p-4"
                 >
-                  <div className="flex-1 min-w-0">
+                  <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium">{label}</p>
-                    <p className="text-muted-foreground text-xs mt-0.5">{description}</p>
+                    <p className="text-muted-foreground mt-0.5 text-xs">{description}</p>
                   </div>
 
                   {/* Action selector */}
@@ -739,7 +799,7 @@ export function ModerationClient({ guildId }: ModerationClientProps) {
                   >
                     <span
                       className={cn(
-                        'pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow transform transition duration-200 ease-in-out',
+                        'pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow transition duration-200 ease-in-out',
                         enabled ? 'translate-x-4' : 'translate-x-0',
                       )}
                     />

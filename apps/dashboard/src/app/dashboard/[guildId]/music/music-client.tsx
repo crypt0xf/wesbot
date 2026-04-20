@@ -1,7 +1,17 @@
 'use client';
 
 import { cn } from '@wesbot/ui';
-import { Clock, Layers, Loader2, Music2, PhoneCall, PhoneMissed, Play, Plus, Sliders } from 'lucide-react';
+import {
+  Clock,
+  Layers,
+  Loader2,
+  Music2,
+  PhoneCall,
+  PhoneMissed,
+  Play,
+  Plus,
+  Sliders,
+} from 'lucide-react';
 import Image from 'next/image';
 
 import { useEffect, useRef, useState } from 'react';
@@ -30,7 +40,8 @@ interface MusicClientProps {
 }
 
 export function MusicClient({ guildId }: MusicClientProps) {
-  const { queue, positionMs, lastPositionAt, reorder, setFilter, play, joinVoice, stop } = usePlayer(guildId);
+  const { queue, positionMs, lastPositionAt, reorder, setFilter, play, joinVoice, stop } =
+    usePlayer(guildId);
   const [tab, setTab] = useState<'queue' | 'filters' | 'history'>('queue');
   const [, setTick] = useState(0);
   const [optimisticFilter, setOptimisticFilter] = useState<string | null>(null);
@@ -60,9 +71,10 @@ export function MusicClient({ guildId }: MusicClientProps) {
     }
   }, [queue?.activeFilter, optimisticFilter]);
 
-  const livePositionMs = isPaused || !lastPositionAt
-    ? positionMs
-    : Math.min(duration || Infinity, positionMs + (Date.now() - lastPositionAt));
+  const livePositionMs =
+    isPaused || !lastPositionAt
+      ? positionMs
+      : Math.min(duration || Infinity, positionMs + (Date.now() - lastPositionAt));
 
   const current = queue?.current ?? null;
   const tracks = queue?.tracks ?? [];
@@ -78,7 +90,7 @@ export function MusicClient({ guildId }: MusicClientProps) {
       if (res.ok) {
         setQuery('');
       } else {
-        const body = await res.json().catch(() => ({})) as { error?: string };
+        const body = (await res.json().catch(() => ({}))) as { error?: string };
         setPlayError(body.error ?? 'Falha ao adicionar música.');
       }
     } catch {
@@ -94,7 +106,7 @@ export function MusicClient({ guildId }: MusicClientProps) {
     try {
       const res = await joinVoice();
       if (!res.ok) {
-        const body = await res.json().catch(() => ({})) as { error?: string };
+        const body = (await res.json().catch(() => ({}))) as { error?: string };
         setJoinError(body.error ?? 'Falha ao entrar na chamada.');
       }
     } catch {
@@ -124,7 +136,7 @@ export function MusicClient({ guildId }: MusicClientProps) {
             </div>
           )}
           <div className="min-w-0">
-            <p className="text-xs font-medium uppercase tracking-wider text-primary">
+            <p className="text-primary text-xs font-medium uppercase tracking-wider">
               Tocando agora
             </p>
             <h2 className="mt-0.5 truncate text-xl font-bold">{current.title}</h2>
@@ -145,15 +157,20 @@ export function MusicClient({ guildId }: MusicClientProps) {
       )}
 
       {/* Add music + join voice controls */}
-      <div className="border-border border-b px-4 py-3 flex items-center gap-2">
+      <div className="border-border flex items-center gap-2 border-b px-4 py-3">
         <input
           ref={queryRef}
           type="text"
           value={query}
-          onChange={(e) => { setQuery(e.target.value); setPlayError(null); }}
-          onKeyDown={(e) => { if (e.key === 'Enter') void handlePlay(); }}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setPlayError(null);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') void handlePlay();
+          }}
           placeholder="Pesquisar ou colar URL..."
-          className="border-border bg-background min-w-0 flex-1 rounded-md border px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+          className="border-border bg-background focus:ring-ring min-w-0 flex-1 rounded-md border px-3 py-1.5 text-sm focus:outline-none focus:ring-1"
         />
         <Button
           size="sm"
@@ -186,7 +203,10 @@ export function MusicClient({ guildId }: MusicClientProps) {
         <Button
           size="sm"
           variant="outline"
-          onClick={() => { setLeaveLoading(true); void stop().finally(() => setLeaveLoading(false)); }}
+          onClick={() => {
+            setLeaveLoading(true);
+            void stop().finally(() => setLeaveLoading(false));
+          }}
           disabled={leaveLoading}
           className="shrink-0 text-red-500 hover:text-red-500"
           title="Desconectar bot da chamada"
@@ -210,7 +230,7 @@ export function MusicClient({ guildId }: MusicClientProps) {
           className={cn(
             'flex items-center gap-2 px-5 py-3 text-sm font-medium transition-colors',
             tab === 'queue'
-              ? 'border-b-2 border-primary text-foreground'
+              ? 'border-primary text-foreground border-b-2'
               : 'text-muted-foreground hover:text-foreground',
           )}
         >
@@ -227,7 +247,7 @@ export function MusicClient({ guildId }: MusicClientProps) {
           className={cn(
             'flex items-center gap-2 px-5 py-3 text-sm font-medium transition-colors',
             tab === 'filters'
-              ? 'border-b-2 border-primary text-foreground'
+              ? 'border-primary text-foreground border-b-2'
               : 'text-muted-foreground hover:text-foreground',
           )}
         >
@@ -239,7 +259,7 @@ export function MusicClient({ guildId }: MusicClientProps) {
           className={cn(
             'flex items-center gap-2 px-5 py-3 text-sm font-medium transition-colors',
             tab === 'history'
-              ? 'border-b-2 border-primary text-foreground'
+              ? 'border-primary text-foreground border-b-2'
               : 'text-muted-foreground hover:text-foreground',
           )}
         >
@@ -256,10 +276,7 @@ export function MusicClient({ guildId }: MusicClientProps) {
       {/* Tab content */}
       <div className="flex-1 overflow-y-auto p-4">
         {tab === 'queue' && (
-          <QueuePanel
-            tracks={tracks}
-            onReorder={(from, to) => void reorder(from, to)}
-          />
+          <QueuePanel tracks={tracks} onReorder={(from, to) => void reorder(from, to)} />
         )}
 
         {tab === 'filters' && (
@@ -269,7 +286,10 @@ export function MusicClient({ guildId }: MusicClientProps) {
                 key={value}
                 variant={activeFilter === value ? 'default' : 'outline'}
                 className="h-20 flex-col gap-2"
-                onClick={() => { setOptimisticFilter(value); void setFilter(value); }}
+                onClick={() => {
+                  setOptimisticFilter(value);
+                  void setFilter(value);
+                }}
               >
                 <Sliders className="h-5 w-5" />
                 <span className="text-xs">{label}</span>
@@ -296,7 +316,7 @@ export function MusicClient({ guildId }: MusicClientProps) {
                     alt={track.title}
                     width={36}
                     height={36}
-                    className="rounded shrink-0"
+                    className="shrink-0 rounded"
                     unoptimized
                   />
                 ) : (

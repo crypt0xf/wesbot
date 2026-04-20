@@ -2,8 +2,15 @@ import { Events } from 'discord.js';
 
 import type { BotEvent } from '../../types';
 
-function publishMemberStats(guildId: string, total: number, bots: number, container: Parameters<BotEvent<typeof Events.GuildCreate>['execute']>[1]): void {
-  void container.redis.hset(`stats:members:${guildId}`, 'total', total, 'bots', bots).catch(() => undefined);
+function publishMemberStats(
+  guildId: string,
+  total: number,
+  bots: number,
+  container: Parameters<BotEvent<typeof Events.GuildCreate>['execute']>[1],
+): void {
+  void container.redis
+    .hset(`stats:members:${guildId}`, 'total', total, 'bots', bots)
+    .catch(() => undefined);
 }
 
 export const guildCreate: BotEvent<typeof Events.GuildCreate> = {

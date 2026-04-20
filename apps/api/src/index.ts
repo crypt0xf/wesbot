@@ -70,7 +70,9 @@ async function buildServer() {
   app.addHook('onClose', async () => {
     await Promise.all([
       prisma.$disconnect(),
-      pubsubClient.quit().catch(() => { pubsubClient.disconnect(); }),
+      pubsubClient.quit().catch(() => {
+        pubsubClient.disconnect();
+      }),
     ]);
   });
 

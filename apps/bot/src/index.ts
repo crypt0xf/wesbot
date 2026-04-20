@@ -41,11 +41,17 @@ const shoukaku = createShoukaku({
 });
 const redis = createRedis(env.REDIS_URL, logger);
 const persistence = new QueuePersistence(redis, logger);
-const music = new MusicController(shoukaku, logger, persistence, (channel, payload) => {
-  redis.publish(channel, JSON.stringify(payload)).catch((err: unknown) => {
-    logger.warn({ err, channel }, 'redis publish failed');
-  });
-}, redis);
+const music = new MusicController(
+  shoukaku,
+  logger,
+  persistence,
+  (channel, payload) => {
+    redis.publish(channel, JSON.stringify(payload)).catch((err: unknown) => {
+      logger.warn({ err, channel }, 'redis publish failed');
+    });
+  },
+  redis,
+);
 const settings = new GuildConfigService(prisma, logger);
 const playlists = new PlaylistService(prisma, logger);
 const lyrics = new LyricsService(logger);

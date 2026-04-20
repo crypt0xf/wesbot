@@ -23,13 +23,17 @@ export default async function GuildOverviewPage({ params }: GuildOverviewPagePro
     headers: { Cookie: cookieHeader },
     cache: 'no-store',
   })
-    .then((r) => r.ok ? (r.json() as Promise<{
-      modActionsToday: number;
-      songsPlayedToday: number;
-      commandsToday: number;
-      totalMembers: number;
-      botMembers: number;
-    }>) : null)
+    .then((r) =>
+      r.ok
+        ? (r.json() as Promise<{
+            modActionsToday: number;
+            songsPlayedToday: number;
+            commandsToday: number;
+            totalMembers: number;
+            botMembers: number;
+          }>)
+        : null,
+    )
     .catch(() => null);
 
   return (
@@ -53,14 +57,18 @@ export default async function GuildOverviewPage({ params }: GuildOverviewPagePro
 
       {/* Quick actions */}
       <div className="mt-8">
-        <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+        <h2 className="text-muted-foreground mb-4 text-sm font-semibold uppercase tracking-wider">
           Ações rápidas
         </h2>
         <div className="flex flex-wrap gap-2">
           {[
             { label: 'Gerenciar música', icon: <Music className="h-3.5 w-3.5" />, href: 'music' },
             { label: 'Moderação', icon: <Shield className="h-3.5 w-3.5" />, href: 'moderation' },
-            { label: 'Configurações', icon: <Settings className="h-3.5 w-3.5" />, href: 'settings' },
+            {
+              label: 'Configurações',
+              icon: <Settings className="h-3.5 w-3.5" />,
+              href: 'settings',
+            },
           ].map(({ label, icon, href }) => (
             <Link
               key={href}
