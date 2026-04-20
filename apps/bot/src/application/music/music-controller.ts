@@ -1,4 +1,5 @@
 import { type LoopMode, MAX_VOLUME, type Track } from '@wesbot/shared';
+import type { default as Redis } from 'ioredis';
 import {
   type FilterOptions,
   LoadType,
@@ -54,7 +55,7 @@ export class MusicController {
     private readonly logger: Logger,
     private readonly persistence?: QueuePersistence,
     private readonly publish?: PublishFn,
-    private readonly statsRedis?: import('ioredis').default,
+    private readonly statsRedis?: Redis,
   ) {}
 
   private publishQueueState(guildId: string): void {
@@ -299,7 +300,7 @@ export class MusicController {
     }
   }
 
-  private saveHistoryAsync(guildId: string, history: import('@wesbot/shared').Track[]): void {
+  private saveHistoryAsync(guildId: string, history: Track[]): void {
     if (!this.statsRedis || history.length === 0) return;
     const key = `track_history:${guildId}`;
     void this.statsRedis

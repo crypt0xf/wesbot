@@ -154,7 +154,7 @@ export function startBotCommandListener(
   sub.on('error', (err) => logger.error({ err }, 'bot-command-listener redis error'));
   sub.on('ready', () => {
     logger.info('bot-command-listener ready');
-    sub.subscribe('commands:bot', (err) => {
+    void sub.subscribe('commands:bot', (err) => {
       if (err) logger.error({ err }, 'failed to subscribe to commands:bot');
     });
   });

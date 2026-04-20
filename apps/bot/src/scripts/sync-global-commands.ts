@@ -6,8 +6,8 @@
  *
  * Run: tsx src/scripts/sync-global-commands.ts [guildId]
  */
-import { config as loadEnv } from 'dotenv';
 import { REST, Routes } from 'discord.js';
+import { config as loadEnv } from 'dotenv';
 
 import { commands } from '../presentation/commands/index.js';
 
@@ -29,8 +29,8 @@ const route = guildId
   : Routes.applicationCommands(clientId);
 const scope = guildId ? `guild:${guildId} (instant)` : 'global (~1h to propagate)';
 
-console.log(`Syncing ${body.length} commands to ${scope}...`);
-console.log('Commands:', body.map((c) => c.name).join(', '));
+process.stderr.write(`Syncing ${body.length} commands to ${scope}...\n`);
+process.stderr.write(`Commands: ${body.map((c) => c.name).join(', ')}\n`);
 
 await rest.put(route, { body });
-console.log('Done.');
+process.stderr.write('Done.\n');

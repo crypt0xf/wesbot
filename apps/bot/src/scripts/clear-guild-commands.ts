@@ -2,8 +2,8 @@
  * Clears guild-scoped commands from a specific guild.
  * Run: tsx src/scripts/clear-guild-commands.ts <guildId>
  */
-import { config as loadEnv } from 'dotenv';
 import { REST, Routes } from 'discord.js';
+import { config as loadEnv } from 'dotenv';
 
 loadEnv();
 
@@ -21,6 +21,6 @@ if (!guildId) {
 }
 
 const rest = new REST({ version: '10' }).setToken(token);
-console.log(`Clearing guild commands for guild ${guildId}...`);
+process.stderr.write(`Clearing guild commands for guild ${guildId}...\n`);
 await rest.put(Routes.applicationGuildCommands(clientId, guildId), { body: [] });
-console.log('Done.');
+process.stderr.write('Done.\n');
