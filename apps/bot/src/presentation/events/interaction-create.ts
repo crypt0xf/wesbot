@@ -68,6 +68,19 @@ export function createInteractionCreateHandler(
           },
           'command ok',
         );
+        if (interaction.guildId) {
+          const date = new Date().toISOString().slice(0, 10);
+          const gid = interaction.guildId;
+          const uid = interaction.user.id;
+          void Promise.all([
+            container.redis.incr(`stats:commands:${gid}:${date}`).then(() =>
+              container.redis.expireat(`stats:commands:${gid}:${date}`, tomorrowUnix()),
+            ),
+            container.redis.sadd(`stats:active:${gid}:${date}`, uid).then(() =>
+              container.redis.expireat(`stats:active:${gid}:${date}`, tomorrowUnix()),
+            ),
+          ]).catch(() => undefined);
+        }
       } catch (err) {
         const durationMs = Date.now() - started;
         if (err instanceof UserFacingError) {
@@ -131,6 +144,13 @@ function buildContext(
     t: (key, vars) => container.i18n.t(locale, key, vars),
     locale,
   };
+}
+
+function tomorrowUnix(): number {
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  d.setHours(0, 0, 0, 0);
+  return Math.floor(d.getTime() / 1000);
 }
 
 async function respond(interaction: RepliableInteraction, content: string): Promise<void> {

@@ -1,41 +1,14 @@
-import {
-  Music,
-  Shield,
-  Users,
-  Activity,
-  Settings,
-} from 'lucide-react';
+import { Music, Settings, Shield } from 'lucide-react';
 import type { Metadata } from 'next';
 import { cookies } from 'next/headers';
 import Link from 'next/link';
 
 import { Badge } from '../../../components/ui/badge';
+import { OverviewStats } from './overview-stats';
 
 export const metadata: Metadata = { title: 'Overview' };
 
 const API_URL = process.env.API_URL ?? 'http://localhost:4000';
-
-interface StatCardProps {
-  label: string;
-  value: string;
-  icon: React.ReactNode;
-  description?: string;
-}
-
-function StatCard({ label, value, icon, description }: StatCardProps) {
-  return (
-    <div className="bg-card border-border rounded-xl border p-5">
-      <div className="flex items-center justify-between">
-        <p className="text-muted-foreground text-sm font-medium">{label}</p>
-        <span className="text-muted-foreground">{icon}</span>
-      </div>
-      <p className="mt-2 text-2xl font-bold">{value}</p>
-      {description && (
-        <p className="text-muted-foreground mt-1 text-xs">{description}</p>
-      )}
-    </div>
-  );
-}
 
 interface GuildOverviewPageProps {
   params: Promise<{ guildId: string }>;
@@ -50,7 +23,13 @@ export default async function GuildOverviewPage({ params }: GuildOverviewPagePro
     headers: { Cookie: cookieHeader },
     cache: 'no-store',
   })
-    .then((r) => (r.ok ? (r.json() as Promise<{ modActionsToday: number }>) : null))
+    .then((r) => r.ok ? (r.json() as Promise<{
+      modActionsToday: number;
+      songsPlayedToday: number;
+      commandsToday: number;
+      totalMembers: number;
+      botMembers: number;
+    }>) : null)
     .catch(() => null);
 
   return (
@@ -69,33 +48,8 @@ export default async function GuildOverviewPage({ params }: GuildOverviewPagePro
         </Badge>
       </div>
 
-      {/* Stats grid */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <StatCard
-          label="Músicas tocadas hoje"
-          value="—"
-          icon={<Music className="h-4 w-4" />}
-          description="Em breve"
-        />
-        <StatCard
-          label="Ações de moderação"
-          value={stats ? String(stats.modActionsToday) : '—'}
-          icon={<Shield className="h-4 w-4" />}
-          description="Hoje"
-        />
-        <StatCard
-          label="Membros ativos"
-          value="—"
-          icon={<Users className="h-4 w-4" />}
-          description="Em breve"
-        />
-        <StatCard
-          label="Comandos executados"
-          value="—"
-          icon={<Activity className="h-4 w-4" />}
-          description="Em breve"
-        />
-      </div>
+      {/* Stats grid — client component, polls every 30s */}
+      <OverviewStats guildId={guildId} initial={stats} />
 
       {/* Quick actions */}
       <div className="mt-8">

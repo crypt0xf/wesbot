@@ -92,6 +92,17 @@ export class GuildMusicSession {
     this.skipVotes.clear();
   }
 
+  /** Reset playback state but preserve history (used when queue exhausts naturally). */
+  idleReset(): void {
+    this.queue.length = 0;
+    this.current = null;
+    this.loop = 'off';
+    this.autoplay = false;
+    this.voiceChannelId = null;
+    this.activeFilter = 'off';
+    this.skipVotes.clear();
+  }
+
   setLoop(mode: LoopMode): void {
     this.loop = mode;
   }

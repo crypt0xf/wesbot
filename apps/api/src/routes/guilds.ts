@@ -4,7 +4,8 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 
 import { writeAuditLog } from '../lib/audit-log';
-import { DiscordApiError, fetchUserGuilds, guildIconUrl, hasManageGuild } from '../lib/discord-api';
+import { DiscordApiError, fetchGuildMember, fetchGuildMembers, fetchUserGuilds, guildIconUrl, hasManageGuild, memberAvatarUrl } from '../lib/discord-api';
+import { env } from '../env';
 
 const guildIdParamSchema = z.object({
   guildId: z.string().regex(/^\d{17,20}$/),
@@ -176,7 +177,67 @@ export function guildRoutes(
     },
   );
 
-  // Lightweight stats endpoint — no Discord call, just DB aggregates
+  // GET /api/guilds/:guildId/members — list members for moderation picker
+  app.get(
+    '/api/guilds/:guildId/members',
+    { preHandler: app.authenticate, schema: { params: guildIdParamSchema } },
+    async (request, reply) => {
+      const { guildId } = guildIdParamSchema.parse(request.params);
+      if (!env.DISCORD_TOKEN) return reply.status(503).send({ error: 'DISCORD_TOKEN not configured' });
+      try {
+        const members = await fetchGuildMembers(env.DISCORD_TOKEN, guildId);
+        return members
+          .filter((m) => !m.user.id.startsWith('0'))
+          .map((m) => ({
+            id: m.user.id,
+            username: m.user.username,
+            displayName: m.nick ?? m.user.global_name ?? m.user.username,
+            avatar: memberAvatarUrl(guildId, m.user.id, null, m.user.avatar),
+            isBot: false,
+          }));
+      } catch (e) {
+        if (e instanceof DiscordApiError) return reply.status(e.status).send({ error: 'Discord API error' });
+        throw e;
+      }
+    },
+  );
+
+  // GET /api/guilds/:guildId/members/:userId — single member detail
+  app.get(
+    '/api/guilds/:guildId/members/:userId',
+    {
+      preHandler: app.authenticate,
+      schema: {
+        params: z.object({
+          guildId: z.string().regex(/^\d{17,20}$/),
+          userId: z.string().regex(/^\d{17,20}$/),
+        }),
+      },
+    },
+    async (request, reply) => {
+      const { guildId, userId } = z.object({
+        guildId: z.string().regex(/^\d{17,20}$/),
+        userId: z.string().regex(/^\d{17,20}$/),
+      }).parse(request.params);
+      if (!env.DISCORD_TOKEN) return reply.status(503).send({ error: 'DISCORD_TOKEN not configured' });
+      try {
+        const m = await fetchGuildMember(env.DISCORD_TOKEN, guildId, userId);
+        return {
+          id: m.user.id,
+          username: m.user.username,
+          displayName: m.nick ?? m.user.global_name ?? m.user.username,
+          avatar: memberAvatarUrl(guildId, m.user.id, null, m.user.avatar),
+          joinedAt: m.joined_at ?? null,
+          roles: m.roles,
+        };
+      } catch (e) {
+        if (e instanceof DiscordApiError) return reply.status(e.status).send({ error: 'Discord API error' });
+        throw e;
+      }
+    },
+  );
+
+  // Lightweight stats endpoint — DB aggregates + Redis counters
   app.get(
     '/api/guilds/:guildId/stats',
     {
@@ -189,10 +250,27 @@ export function guildRoutes(
       todayStart.setHours(0, 0, 0, 0);
       const guild = await prisma.guild.findUnique({ where: { id: BigInt(guildId) } });
       if (!guild) return reply.notFound();
-      const modActionsToday = await prisma.modLog.count({
-        where: { guildId: BigInt(guildId), createdAt: { gte: todayStart } },
-      });
-      return { modActionsToday };
+
+      const date = new Date().toISOString().slice(0, 10);
+      const [modActionsToday, songsRaw, commandsRaw, memberStats] = await Promise.all([
+        prisma.modLog.count({
+          where: { guildId: BigInt(guildId), createdAt: { gte: todayStart } },
+        }),
+        app.redis.get(`stats:songs:${guildId}:${date}`),
+        app.redis.get(`stats:commands:${guildId}:${date}`),
+        app.redis.hgetall(`stats:members:${guildId}`),
+      ]);
+
+      const totalMembers = parseInt(memberStats?.total ?? '0', 10);
+      const botMembers = parseInt(memberStats?.bots ?? '0', 10);
+
+      return {
+        modActionsToday,
+        songsPlayedToday: parseInt(songsRaw ?? '0', 10),
+        commandsToday: parseInt(commandsRaw ?? '0', 10),
+        totalMembers,
+        botMembers,
+      };
     },
   );
 }

@@ -38,7 +38,7 @@ const authPlugin: FastifyPluginCallback<{ secret: string; secureCookie: boolean 
     if (!payload?.sub) return null;
 
     return {
-      id: payload.sub,
+      id: (payload.discordId as string | undefined) ?? payload.sub,
       name: (payload.name as string | undefined) ?? '',
       email: (payload.email as string | undefined) ?? '',
       image: payload.picture as string | undefined,

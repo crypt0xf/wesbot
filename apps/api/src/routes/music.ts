@@ -38,6 +38,37 @@ function publishCommand(
   void redis.publish('commands:bot', JSON.stringify(payload));
 }
 
+async function publishAndAwait(
+  redis: FastifyInstance['redis'],
+  payload: Record<string, unknown>,
+  timeoutMs = 10_000,
+): Promise<{ ok: boolean; error?: string }> {
+  const requestId = payload.requestId as string;
+  const replyChannel = `replies:bot:${requestId}`;
+  return new Promise((resolve) => {
+    let finished = false;
+    function finish(result: { ok: boolean; error?: string }) {
+      if (finished) return;
+      finished = true;
+      clearTimeout(timer);
+      void sub.unsubscribe().catch(() => undefined);
+      void sub.quit().catch(() => undefined);
+      resolve(result);
+    }
+    const sub = redis.duplicate();
+    sub.subscribe(replyChannel, (err) => {
+      if (err) { finish({ ok: false, error: 'subscribe failed' }); return; }
+      void redis.publish('commands:bot', JSON.stringify(payload)).catch(() => undefined);
+    });
+    sub.on('message', (_ch, raw) => {
+      try { finish(JSON.parse(raw) as { ok: boolean; error?: string }); } catch { /* ignore */ }
+    });
+    const timer = setTimeout(() => finish({ ok: false, error: 'timeout' }), timeoutMs);
+  });
+}
+
+const isSnowflake = (id: string) => /^\d{17,20}$/.test(id);
+
 export function musicRoutes(app: FastifyInstance): void {
   const baseOpts = {
     preHandler: app.authenticate,
@@ -185,6 +216,59 @@ export function musicRoutes(app: FastifyInstance): void {
       return reply.status(202).send({ ok: true });
     },
   );
+
+  // POST /api/guilds/:guildId/music/play  body: { query: string }
+  app.post(
+    '/api/guilds/:guildId/music/play',
+    { ...baseOpts, schema: { ...baseOpts.schema, body: z.object({ query: z.string().min(1).max(500) }) } },
+    async (request, reply) => {
+      const { guildId } = guildIdParamSchema.parse(request.params);
+      const { query } = z.object({ query: z.string().min(1).max(500) }).parse(request.body);
+      const u = request.user!;
+      if (!u.accessToken) return reply.unauthorized();
+      if (!isSnowflake(u.id)) return reply.unauthorized('Sessão desatualizada. Faça logout e entre novamente.');
+      await assertGuildAccess(u.accessToken, guildId).catch(guardAccess(reply));
+      if (reply.sent) return;
+      const requestId = crypto.randomUUID();
+      const result = await publishAndAwait(app.redis, {
+        type: 'music.play',
+        requestId,
+        guildId,
+        userId: u.id,
+        query,
+      });
+      if (!result.ok) {
+        const msg = result.error ?? 'unknown error';
+        if (msg.includes('não está em uma chamada')) return reply.status(400).send({ error: msg });
+        if (msg.includes('noResults') || msg.includes('no results')) return reply.status(404).send({ error: 'Nenhum resultado encontrado.' });
+        return reply.status(500).send({ error: msg });
+      }
+      return reply.status(200).send({ ok: true });
+    },
+  );
+
+  // POST /api/guilds/:guildId/music/join  — bot joins user's voice channel
+  app.post('/api/guilds/:guildId/music/join', baseOpts, async (request, reply) => {
+    const { guildId } = guildIdParamSchema.parse(request.params);
+    const u = request.user!;
+    if (!u.accessToken) return reply.unauthorized();
+    if (!isSnowflake(u.id)) return reply.unauthorized('Sessão desatualizada. Faça logout e entre novamente.');
+    await assertGuildAccess(u.accessToken, guildId).catch(guardAccess(reply));
+    if (reply.sent) return;
+    const requestId = crypto.randomUUID();
+    const result = await publishAndAwait(app.redis, {
+      type: 'music.join',
+      requestId,
+      guildId,
+      userId: u.id,
+    });
+    if (!result.ok) {
+      const msg = result.error ?? 'unknown error';
+      if (msg.includes('não está em uma chamada')) return reply.status(400).send({ error: msg });
+      return reply.status(500).send({ error: msg });
+    }
+    return reply.status(200).send({ ok: true });
+  });
 
   // POST /api/guilds/:guildId/music/reorder  body: { fromIndex, toIndex }
   app.post(

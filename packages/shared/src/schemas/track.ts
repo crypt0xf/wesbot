@@ -38,6 +38,9 @@ export type Track = z.infer<typeof trackSchema>;
 export const loopModeSchema = z.enum(['off', 'track', 'queue']);
 export type LoopMode = z.infer<typeof loopModeSchema>;
 
+export const activFilterSchema = z.enum(['off', 'bassboost', 'nightcore', 'eightd']);
+export type ActiveFilter = z.infer<typeof activFilterSchema>;
+
 export const queueStateSchema = z.object({
   guildId: z.string(),
   voiceChannelId: z.string().nullable(),
@@ -49,5 +52,6 @@ export const queueStateSchema = z.object({
   volume: z.number().int().min(0).max(200).default(100),
   loop: loopModeSchema.default('off'),
   autoplay: z.boolean().default(false),
+  activeFilter: activFilterSchema.default('off'),
 });
 export type QueueState = z.infer<typeof queueStateSchema>;

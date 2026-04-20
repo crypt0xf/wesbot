@@ -40,8 +40,36 @@ async function dispatch(
     case 'music.reorder':
       music.reorder(cmd.guildId, cmd.fromIndex, cmd.toIndex);
       break;
-    case 'music.play':
+    case 'music.play': {
+      const guild = await client.guilds.fetch(cmd.guildId);
+      let voiceChannelId = cmd.voiceChannelId;
+      if (!voiceChannelId) {
+        const existingSession = music.getSession(cmd.guildId);
+        voiceChannelId = existingSession?.voiceChannelId ?? undefined;
+      }
+      if (!voiceChannelId) {
+        const member = await guild.members.fetch(cmd.userId);
+        voiceChannelId = member.voice.channelId ?? undefined;
+      }
+      if (!voiceChannelId) throw new Error('Você não está em uma chamada de voz.');
+      await music.play({
+        guildId: cmd.guildId,
+        voiceChannelId,
+        textChannelId: voiceChannelId,
+        shardId: guild.shardId,
+        query: cmd.query,
+        requesterId: cmd.userId,
+      });
       break;
+    }
+    case 'music.join': {
+      const guild = await client.guilds.fetch(cmd.guildId);
+      const member = await guild.members.fetch(cmd.userId);
+      const channelId = member.voice.channelId;
+      if (!channelId) throw new Error('Você não está em uma chamada de voz.');
+      await music.joinVoice(cmd.guildId, channelId, guild.shardId);
+      break;
+    }
 
     case 'mod.warn': {
       const guild = await client.guilds.fetch(cmd.guildId);

@@ -1,10 +1,11 @@
 'use client';
 
 import { cn } from '@wesbot/ui';
-import { RefreshCw, Search, Trash2 } from 'lucide-react';
+import { RefreshCw, ShieldAlert, Trash2, User } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 
 import { Button } from '../../../../components/ui/button';
+import { MemberPicker, type GuildMember } from '../../../../components/member-picker';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
 
@@ -92,6 +93,11 @@ function formatDate(iso: string) {
   return new Date(iso).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
 }
 
+function snowflakeToDate(id: string): string {
+  const ms = Number(BigInt(id) >> 22n) + 1420070400000;
+  return new Date(ms).toLocaleDateString('pt-BR', { dateStyle: 'long' });
+}
+
 function formatDuration(secs: number | null): string {
   if (!secs) return '';
   if (secs >= 86400) return ` (${Math.floor(secs / 86400)}d)`;
@@ -100,12 +106,20 @@ function formatDuration(secs: number | null): string {
 }
 
 async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
+  const hasBody = init?.body !== undefined;
   const res = await fetch(`${API_URL}${path}`, {
     credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
+    headers: hasBody ? { 'Content-Type': 'application/json' } : {},
     ...init,
   });
-  if (!res.ok) throw new Error(`API ${res.status}`);
+  if (!res.ok) {
+    let msg = `API ${res.status}`;
+    try {
+      const body = await res.json() as { error?: string };
+      if (body.error) msg = body.error;
+    } catch { /* ignore */ }
+    throw new Error(msg);
+  }
   return res.json() as Promise<T>;
 }
 
@@ -113,7 +127,7 @@ interface ModerationClientProps {
   guildId: string;
 }
 
-type Tab = 'actions' | 'logs' | 'warns' | 'automod';
+type Tab = 'actions' | 'logs' | 'member' | 'automod';
 
 const ACTION_TYPES = [
   { value: 'warn', label: 'Avisar', needsDuration: false },
@@ -144,10 +158,15 @@ export function ModerationClient({ guildId }: ModerationClientProps) {
   const [logCursor, setLogCursor] = useState<string | undefined>();
   const [logHasMore, setLogHasMore] = useState(false);
 
-  // Warns state
-  const [warnUserId, setWarnUserId] = useState('');
-  const [warns, setWarns] = useState<Warn[]>([]);
-  const [warnLoading, setWarnLoading] = useState(false);
+  // Member analysis state
+  const [memberUserId, setMemberUserId] = useState('');
+  const [memberInfo, setMemberInfo] = useState<GuildMember | null>(null);
+  const [memberJoinedAt, setMemberJoinedAt] = useState<string | null>(null);
+  const [memberRoles, setMemberRoles] = useState<string[]>([]);
+  const [memberWarns, setMemberWarns] = useState<Warn[]>([]);
+  const [memberLogs, setMemberLogs] = useState<ModLog[]>([]);
+  const [memberLoading, setMemberLoading] = useState(false);
+  const [memberSearched, setMemberSearched] = useState(false);
 
   // Automod state
   const [automodRules, setAutomodRules] = useState<AutomodRule[]>([]);
@@ -197,7 +216,7 @@ export function ModerationClient({ guildId }: ModerationClientProps) {
   }, [tab, loadAutomod]);
 
   async function executeAction() {
-    if (!/^\d{17,20}$/.test(actionTargetId) || !actionReason.trim()) return;
+    if (!actionTargetId || !actionReason.trim()) return;
     setActionLoading(true);
     setActionResult(null);
     try {
@@ -217,34 +236,45 @@ export function ModerationClient({ guildId }: ModerationClientProps) {
           ...(needsDuration ? { durationSec } : {}),
         }),
       });
-      setActionResult({ ok: true, msg: 'Ação enviada ao bot com sucesso.' });
+      setActionResult({ ok: true, msg: 'Ação executada com sucesso.' });
       setActionTargetId('');
       setActionReason('');
-    } catch {
-      setActionResult({ ok: false, msg: 'Falha ao executar a ação.' });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Falha ao executar a ação.';
+      setActionResult({ ok: false, msg });
     } finally {
       setActionLoading(false);
     }
   }
 
-  async function searchWarns() {
-    if (!/^\d{17,20}$/.test(warnUserId)) return;
-    setWarnLoading(true);
+  async function loadMemberData(userId: string) {
+    if (!/^\d{17,20}$/.test(userId)) return;
+    setMemberLoading(true);
+    setMemberSearched(true);
+    setMemberWarns([]);
+    setMemberLogs([]);
+    setMemberJoinedAt(null);
+    setMemberRoles([]);
     try {
-      const data = await apiFetch<Warn[]>(
-        `/api/guilds/${guildId}/mod/warns?userId=${warnUserId}`,
-      );
-      setWarns(data);
-    } catch {
-      // ignore
+      const [warns, logs, detail] = await Promise.allSettled([
+        apiFetch<Warn[]>(`/api/guilds/${guildId}/mod/warns?userId=${userId}`),
+        apiFetch<{ items: ModLog[] }>(`/api/guilds/${guildId}/mod/logs?userId=${userId}&limit=50`),
+        apiFetch<{ joinedAt: string | null; roles: string[] }>(`/api/guilds/${guildId}/members/${userId}`),
+      ]);
+      if (warns.status === 'fulfilled') setMemberWarns(warns.value);
+      if (logs.status === 'fulfilled') setMemberLogs(logs.value.items);
+      if (detail.status === 'fulfilled') {
+        setMemberJoinedAt(detail.value.joinedAt);
+        setMemberRoles(detail.value.roles);
+      }
     } finally {
-      setWarnLoading(false);
+      setMemberLoading(false);
     }
   }
 
   async function removeWarn(warnId: string) {
     await apiFetch(`/api/guilds/${guildId}/mod/warns/${warnId}`, { method: 'DELETE' });
-    setWarns((prev) => prev.filter((w) => w.id !== warnId));
+    setMemberWarns((prev) => prev.filter((w) => w.id !== warnId));
   }
 
   function getRuleForType(type: string): AutomodRule | undefined {
@@ -313,7 +343,7 @@ export function ModerationClient({ guildId }: ModerationClientProps) {
   const tabs: { id: Tab; label: string }[] = [
     { id: 'actions', label: 'Executar Ação' },
     { id: 'logs', label: 'Registro' },
-    { id: 'warns', label: 'Avisos' },
+    { id: 'member', label: 'Membro' },
     { id: 'automod', label: 'Automod' },
   ];
 
@@ -366,13 +396,11 @@ export function ModerationClient({ guildId }: ModerationClientProps) {
             </div>
 
             <div>
-              <label className="mb-1 block text-xs font-medium text-muted-foreground">ID do Usuário</label>
-              <input
-                type="text"
+              <label className="mb-1 block text-xs font-medium text-muted-foreground">Membro</label>
+              <MemberPicker
+                guildId={guildId}
                 value={actionTargetId}
-                onChange={(e) => setActionTargetId(e.target.value)}
-                placeholder="Ex: 1234567890123456789"
-                className="border-border bg-background w-full rounded-md border px-3 py-2 text-sm font-mono"
+                onChange={setActionTargetId}
               />
             </div>
 
@@ -506,72 +534,158 @@ export function ModerationClient({ guildId }: ModerationClientProps) {
         </div>
       )}
 
-      {/* Warns */}
-      {tab === 'warns' && (
-        <div className="space-y-4">
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={warnUserId}
-              onChange={(e) => setWarnUserId(e.target.value)}
-              placeholder="ID do usuário Discord"
-              className="border-border bg-background flex-1 rounded-md border px-3 py-1.5 text-sm font-mono"
-            />
-            <Button
-              size="sm"
-              onClick={() => void searchWarns()}
-              disabled={warnLoading || !/^\d{17,20}$/.test(warnUserId)}
-            >
-              <Search className="h-4 w-4 mr-1.5" />
-              Buscar
-            </Button>
-          </div>
+      {/* Member Analysis */}
+      {tab === 'member' && (
+        <div className="space-y-5 max-w-2xl">
+          <p className="text-muted-foreground text-sm">
+            Selecione um membro para ver seu perfil, punições e avisos ativos.
+          </p>
 
-          {warns.length > 0 && (
-            <div className="rounded-lg border border-border overflow-hidden">
-              <table className="w-full text-sm">
-                <thead className="bg-muted/50">
-                  <tr>
-                    <th className="px-4 py-2 text-left font-medium text-muted-foreground">ID</th>
-                    <th className="px-4 py-2 text-left font-medium text-muted-foreground">Motivo</th>
-                    <th className="px-4 py-2 text-left font-medium text-muted-foreground">Moderador</th>
-                    <th className="px-4 py-2 text-left font-medium text-muted-foreground">Data</th>
-                    <th className="px-4 py-2" />
-                  </tr>
-                </thead>
-                <tbody>
-                  {warns.map((w) => (
-                    <tr key={w.id} className="border-t border-border hover:bg-muted/30 transition-colors">
-                      <td className="px-4 py-2.5 font-mono text-xs text-muted-foreground">
-                        {w.id.slice(0, 8)}…
-                      </td>
-                      <td className="px-4 py-2.5 max-w-xs truncate">{w.reason}</td>
-                      <td className="px-4 py-2.5 font-mono text-xs text-muted-foreground">
-                        {w.moderatorId}
-                      </td>
-                      <td className="px-4 py-2.5 text-xs text-muted-foreground whitespace-nowrap">
-                        {formatDate(w.createdAt)}
-                      </td>
-                      <td className="px-4 py-2.5">
-                        <button
-                          onClick={() => void removeWarn(w.id)}
-                          className="text-muted-foreground hover:text-red-500 transition-colors"
-                          title="Remover aviso"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+          <MemberPicker
+            guildId={guildId}
+            value={memberUserId}
+            onMemberSelect={(m) => {
+              setMemberInfo(m);
+              if (!m) { setMemberUserId(''); setMemberSearched(false); return; }
+              setMemberUserId(m.id);
+              void loadMemberData(m.id);
+            }}
+            onChange={(id) => {
+              if (!id) { setMemberUserId(''); setMemberInfo(null); setMemberSearched(false); }
+            }}
+            placeholder="Selecionar membro..."
+          />
+
+          {memberLoading && (
+            <p className="text-muted-foreground text-sm text-center py-4">Carregando dados...</p>
           )}
 
-          {warns.length === 0 && warnUserId && !warnLoading && (
-            <p className="text-muted-foreground text-sm text-center py-4">
-              Nenhum aviso ativo encontrado.
-            </p>
+          {!memberLoading && memberSearched && memberInfo && (
+            <div className="space-y-4">
+              {/* Profile card */}
+              <div className="bg-card border-border rounded-xl border p-5 flex items-center gap-4">
+                {memberInfo.avatar ? (
+                  <img src={memberInfo.avatar} alt="" className="h-14 w-14 rounded-full shrink-0" />
+                ) : (
+                  <div className="bg-muted flex h-14 w-14 shrink-0 items-center justify-center rounded-full">
+                    <User className="h-7 w-7 text-muted-foreground" />
+                  </div>
+                )}
+                <div className="min-w-0 flex-1">
+                  <p className="font-semibold text-lg truncate">{memberInfo.displayName}</p>
+                  <p className="text-muted-foreground text-sm">@{memberInfo.username}</p>
+                  <p className="text-muted-foreground text-xs font-mono mt-0.5">{memberInfo.id}</p>
+                </div>
+                <div className="text-right text-xs text-muted-foreground space-y-1 shrink-0">
+                  <p>Conta criada em</p>
+                  <p className="font-medium text-foreground">{snowflakeToDate(memberInfo.id)}</p>
+                  {memberJoinedAt && (
+                    <>
+                      <p className="mt-1">Entrou em</p>
+                      <p className="font-medium text-foreground">
+                        {new Date(memberJoinedAt).toLocaleDateString('pt-BR', { dateStyle: 'long' })}
+                      </p>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* Summary stats */}
+              <div className="grid grid-cols-3 gap-3">
+                {[
+                  { label: 'Punições totais', value: memberLogs.length },
+                  { label: 'Avisos ativos', value: memberWarns.length, accent: memberWarns.length > 0 },
+                  { label: 'Cargos', value: memberRoles.length },
+                ].map(({ label, value, accent }) => (
+                  <div key={label} className="bg-card border-border rounded-lg border p-3 text-center">
+                    <p className={cn('text-2xl font-bold', accent && value > 0 ? 'text-yellow-500' : '')}>{value}</p>
+                    <p className="text-muted-foreground text-xs mt-0.5">{label}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Punishment history */}
+              <div>
+                <h3 className="text-sm font-semibold flex items-center gap-2 mb-2">
+                  <ShieldAlert className="h-4 w-4 text-muted-foreground" />
+                  Histórico de punições
+                </h3>
+                {memberLogs.length === 0 ? (
+                  <p className="text-muted-foreground text-sm py-3 text-center">Nenhuma punição registrada.</p>
+                ) : (
+                  <div className="rounded-lg border border-border overflow-hidden">
+                    <table className="w-full text-sm">
+                      <thead className="bg-muted/50">
+                        <tr>
+                          <th className="px-3 py-2 text-left font-medium text-muted-foreground">Ação</th>
+                          <th className="px-3 py-2 text-left font-medium text-muted-foreground">Motivo</th>
+                          <th className="px-3 py-2 text-left font-medium text-muted-foreground">Data</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {memberLogs.map((log) => (
+                          <tr key={log.id} className="border-t border-border hover:bg-muted/30 transition-colors">
+                            <td className="px-3 py-2">
+                              <span className={cn('font-medium text-xs', ACTION_COLORS[log.type])}>
+                                {ACTION_LABELS[log.type]}{formatDuration(log.durationSec)}
+                              </span>
+                            </td>
+                            <td className="px-3 py-2 max-w-xs truncate text-muted-foreground text-xs">
+                              {log.reason ?? '—'}
+                            </td>
+                            <td className="px-3 py-2 text-xs text-muted-foreground whitespace-nowrap">
+                              {formatDate(log.createdAt)}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+
+              {/* Active warns */}
+              <div>
+                <h3 className="text-sm font-semibold flex items-center gap-2 mb-2">
+                  <ShieldAlert className="h-4 w-4 text-yellow-500" />
+                  Avisos ativos
+                </h3>
+                {memberWarns.length === 0 ? (
+                  <p className="text-muted-foreground text-sm py-3 text-center">Nenhum aviso ativo.</p>
+                ) : (
+                  <div className="rounded-lg border border-border overflow-hidden">
+                    <table className="w-full text-sm">
+                      <thead className="bg-muted/50">
+                        <tr>
+                          <th className="px-3 py-2 text-left font-medium text-muted-foreground">Motivo</th>
+                          <th className="px-3 py-2 text-left font-medium text-muted-foreground">Moderador</th>
+                          <th className="px-3 py-2 text-left font-medium text-muted-foreground">Data</th>
+                          <th className="px-3 py-2" />
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {memberWarns.map((w) => (
+                          <tr key={w.id} className="border-t border-border hover:bg-muted/30 transition-colors">
+                            <td className="px-3 py-2 max-w-xs truncate">{w.reason}</td>
+                            <td className="px-3 py-2 font-mono text-xs text-muted-foreground">{w.moderatorId}</td>
+                            <td className="px-3 py-2 text-xs text-muted-foreground whitespace-nowrap">{formatDate(w.createdAt)}</td>
+                            <td className="px-3 py-2">
+                              <button
+                                onClick={() => void removeWarn(w.id)}
+                                className="text-muted-foreground hover:text-red-500 transition-colors"
+                                title="Remover aviso"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </div>
           )}
         </div>
       )}

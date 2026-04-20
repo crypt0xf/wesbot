@@ -39,10 +39,11 @@ const config: NextAuthConfig = {
   ],
   callbacks: {
     async jwt({ token, account }) {
-      // Initial sign-in: persist Discord tokens
+      // Initial sign-in: persist Discord tokens and the Discord user snowflake.
       if (account) {
         return {
           ...token,
+          discordId: account.providerAccountId,
           accessToken: account.access_token,
           refreshToken: account.refresh_token,
           expiresAt:

@@ -53,11 +53,9 @@ export class VoiceActivityWatcher {
     if (cfg.twentyFourSeven) {
       return;
     }
+    // Use configured delay, or 5 s grace period when not configured
     const minutes = cfg.autoDisconnectMinutes;
-    if (minutes === null || minutes <= 0) {
-      return;
-    }
-    const delayMs = minutes * 60_000;
+    const delayMs = (minutes !== null && minutes > 0) ? minutes * 60_000 : 5_000;
     const timer = setTimeout(() => {
       this.timers.delete(guild.id);
       void this.fire(guild.id, channelId).catch((err: unknown) => {

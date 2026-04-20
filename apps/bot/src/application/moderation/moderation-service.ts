@@ -56,6 +56,10 @@ export class ModerationService {
     reason?: string,
     durationSec?: number,
   ): Promise<void> {
+    const isSnowflake = (id: string) => /^\d{17,20}$/.test(id);
+    if (!isSnowflake(moderatorId) || !isSnowflake(targetUserId) || !isSnowflake(guildId)) {
+      return; // stale session token — action succeeded, skip log
+    }
     await this.prisma.modLog.create({
       data: {
         guildId: BigInt(guildId),

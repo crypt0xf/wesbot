@@ -16,6 +16,7 @@ const schema = baseEnvSchema
   .merge(databaseEnvSchema)
   .merge(redisEnvSchema)
   .extend({
+    DISCORD_TOKEN: z.string().min(50).optional(),
     DISCORD_CLIENT_ID: z.string().regex(/^\d{17,20}$/),
     DISCORD_CLIENT_SECRET: z.string().min(10).optional(),
     /** Shared secret with the dashboard — used to decode NextAuth JWTs. */

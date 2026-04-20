@@ -56,9 +56,15 @@ export const botCommandSchema = z.discriminatedUnion('type', [
     type: z.literal('music.play'),
     requestId: z.string(),
     guildId: z.string(),
-    voiceChannelId: z.string(),
+    voiceChannelId: z.string().optional(),
     userId: z.string(),
     query: z.string(),
+  }),
+  z.object({
+    type: z.literal('music.join'),
+    requestId: z.string(),
+    guildId: z.string(),
+    userId: z.string(),
   }),
   z.object({
     type: z.literal('music.skip'),

@@ -3,7 +3,7 @@
 import type { MusicEvent } from '@wesbot/shared';
 import { useCallback, useEffect } from 'react';
 
-import { getSocket } from '../lib/socket';
+import { getSocket, joinGuild, leaveGuild } from '../lib/socket';
 import { usePlayerStore } from '../store/player-store';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
@@ -12,10 +12,10 @@ async function musicPost(
   guildId: string,
   action: string,
   body?: Record<string, unknown>,
-): Promise<void> {
-  await fetch(`${API_URL}/api/guilds/${guildId}/music/${action}`, {
+): Promise<Response> {
+  return fetch(`${API_URL}/api/guilds/${guildId}/music/${action}`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: body !== undefined ? { 'Content-Type': 'application/json' } : {},
     credentials: 'include',
     body: body !== undefined ? JSON.stringify(body) : undefined,
   });
@@ -28,9 +28,7 @@ export function usePlayer(guildId: string) {
     const socket = getSocket();
     store.setGuildId(guildId);
 
-    if (!socket.connected) socket.connect();
-
-    socket.emit('join:guild', guildId);
+    joinGuild(guildId);
 
     const onMusic = (event: MusicEvent) => {
       if (event.guildId !== guildId) return;
@@ -56,9 +54,7 @@ export function usePlayer(guildId: string) {
 
     return () => {
       socket.off('music', onMusic);
-      socket.emit('leave:guild', guildId);
-      // Don't clear store here — player bar and other pages still need it.
-      // The store resets naturally when a new guildId is set.
+      leaveGuild(guildId);
     };
   }, [guildId]);
 
@@ -90,10 +86,19 @@ export function usePlayer(guildId: string) {
       musicPost(guildId, 'reorder', { fromIndex, toIndex }),
     [guildId],
   );
+  const play = useCallback(
+    (query: string) => musicPost(guildId, 'play', { query }),
+    [guildId],
+  );
+  const joinVoice = useCallback(
+    () => musicPost(guildId, 'join'),
+    [guildId],
+  );
 
   return {
     queue: store.queue,
     positionMs: store.positionMs,
+    lastPositionAt: store.lastPositionAt,
     pause,
     skip,
     stop,
@@ -102,5 +107,7 @@ export function usePlayer(guildId: string) {
     setLoop,
     setFilter,
     reorder,
+    play,
+    joinVoice,
   };
 }

@@ -28,30 +28,39 @@ export function createSocketGateway(app: FastifyInstance, corsOrigins: string[])
       void socket.join(`guild:${guildId}`);
       app.log.debug({ socketId: socket.id, guildId }, 'ws joined guild');
 
-      // Replay current queue state so the client doesn't see an empty player
-      void app.redis.get(REDIS_KEYS.guildQueue(guildId)).then((raw) => {
-        if (!raw) return;
-        let parsed: PersistedQueue;
+      // Replay active queue state (only when bot is playing), then merge persisted history
+      void Promise.all([
+        app.redis.get(REDIS_KEYS.guildQueue(guildId)),
+        app.redis.get(`track_history:${guildId}`),
+      ]).then(([queueRaw, historyRaw]) => {
+        let queue: PersistedQueue | null = null;
         try {
-          parsed = JSON.parse(raw) as PersistedQueue;
-          if (parsed.v !== 1) return;
-        } catch {
-          return;
-        }
+          const p = JSON.parse(queueRaw ?? 'null') as PersistedQueue | null;
+          if (p?.v === 1 && p.current) queue = p;
+        } catch { /* ignore */ }
+
+        let persistedHistory: unknown[] = [];
+        try {
+          const h = JSON.parse(historyRaw ?? '[]') as unknown[];
+          if (Array.isArray(h)) persistedHistory = h;
+        } catch { /* ignore */ }
+
+        if (!queue && persistedHistory.length === 0) return;
+
         socket.emit('music', {
           type: 'queue.updated',
           guildId,
           state: {
             guildId,
-            voiceChannelId: parsed.voiceChannelId,
-            current: parsed.current,
-            tracks: parsed.queue,
-            history: parsed.history,
+            voiceChannelId: queue?.voiceChannelId ?? null,
+            current: queue?.current ?? null,
+            tracks: queue?.queue ?? [],
+            history: queue?.history?.length ? queue.history : persistedHistory,
             position: 0,
             isPaused: false,
-            volume: parsed.volume,
-            loop: parsed.loop,
-            autoplay: parsed.autoplay,
+            volume: queue?.volume ?? 100,
+            loop: queue?.loop ?? 'off',
+            autoplay: queue?.autoplay ?? false,
           },
           timestamp: Date.now(),
         });

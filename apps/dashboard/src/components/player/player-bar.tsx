@@ -31,12 +31,13 @@ interface PlayerBarProps {
 }
 
 export function PlayerBar({ guildId }: PlayerBarProps) {
-  const { queue, positionMs, pause, skip, stop, seek, setVolume, setLoop } =
+  const { queue, positionMs, lastPositionAt, pause, skip, stop, seek, setVolume, setLoop } =
     usePlayer(guildId);
 
   const [localVolume, setLocalVolume] = useState(100);
   const [draggingSeek, setDraggingSeek] = useState(false);
   const [seekValue, setSeekValue] = useState(0);
+  const [, setTick] = useState(0);
   const isMounted = useRef(true);
 
   useEffect(() => {
@@ -53,7 +54,18 @@ export function PlayerBar({ guildId }: PlayerBarProps) {
   const loopMode = queue?.loop ?? 'off';
   const duration = current?.duration ?? 0;
 
-  const displayPosition = draggingSeek ? seekValue : positionMs;
+  // Advance the displayed position locally so the bar moves between WebSocket events.
+  useEffect(() => {
+    if (isPaused || !current) return;
+    const id = setInterval(() => setTick((t) => t + 1), 500);
+    return () => clearInterval(id);
+  }, [isPaused, current]);
+
+  const livePositionMs = isPaused || !lastPositionAt
+    ? positionMs
+    : Math.min(duration || Infinity, positionMs + (Date.now() - lastPositionAt));
+
+  const displayPosition = draggingSeek ? seekValue : livePositionMs;
   const progress = duration > 0 ? Math.min(100, (displayPosition / duration) * 100) : 0;
 
   const handleSeekCommit = useCallback(
@@ -73,7 +85,7 @@ export function PlayerBar({ guildId }: PlayerBarProps) {
 
   return (
     <TooltipProvider delayDuration={300}>
-      <div className="border-border bg-card/95 fixed inset-x-0 bottom-0 z-50 border-t backdrop-blur-sm">
+      <div className="border-border bg-card/95 border-t backdrop-blur-sm shrink-0">
         <div className="mx-auto flex max-w-screen-2xl items-center gap-4 px-4 py-2">
           {/* Track info */}
           <div className="flex min-w-0 flex-1 items-center gap-3">

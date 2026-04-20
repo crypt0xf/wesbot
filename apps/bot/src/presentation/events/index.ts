@@ -4,7 +4,7 @@ import type { Container } from '../../container';
 import type { BotEvent, SlashCommand } from '../../types';
 
 import { errorEvent, warnEvent } from './error';
-import { guildCreate, guildDelete } from './guild-lifecycle';
+import { guildCreate, guildDelete, guildMemberAdd, guildMemberRemove } from './guild-lifecycle';
 import { createInteractionCreateHandler } from './interaction-create';
 import { ready } from './ready';
 import { voiceStateUpdate } from './voice-state';
@@ -36,6 +36,8 @@ export function registerEvents(
   attach(warnEvent);
   attach(guildCreate);
   attach(guildDelete);
+  attach(guildMemberAdd);
+  attach(guildMemberRemove);
   attach(voiceStateUpdate);
   attach(createInteractionCreateHandler(commands));
 }

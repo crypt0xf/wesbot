@@ -54,6 +54,7 @@ export class MusicController {
     private readonly logger: Logger,
     private readonly persistence?: QueuePersistence,
     private readonly publish?: PublishFn,
+    private readonly statsRedis?: import('ioredis').default,
   ) {}
 
   private publishQueueState(guildId: string): void {
@@ -75,6 +76,7 @@ export class MusicController {
         volume: session.volume,
         loop: session.loop,
         autoplay: session.autoplay,
+        activeFilter: session.activeFilter,
       },
       timestamp: Date.now(),
     });
@@ -230,17 +232,37 @@ export class MusicController {
     const player = this.requirePlayer(guildId);
     const next = session.advance();
     if (next?.encoded) {
+      this.saveHistoryAsync(guildId, [...session.history]);
       await player.playTrack({ track: { encoded: next.encoded } });
       this.persist(session);
+      this.publishQueueState(guildId);
       return next;
     }
-    await this.stop(guildId);
+    await this.idle(guildId);
     return null;
+  }
+
+  async joinVoice(guildId: string, voiceChannelId: string, shardId: number): Promise<void> {
+    const session = this.getOrCreateSession(guildId);
+    session.voiceChannelId = voiceChannelId;
+    await this.ensurePlayer({
+      guildId,
+      voiceChannelId,
+      textChannelId: voiceChannelId,
+      shardId,
+      query: '',
+      requesterId: '',
+    });
+    this.publishQueueState(guildId);
   }
 
   async stop(guildId: string): Promise<void> {
     const session = this.sessions.get(guildId);
-    session?.reset();
+    if (session) {
+      session.reset();
+      // Publish cleared state before deleting so the dashboard clears the player.
+      this.publishQueueState(guildId);
+    }
     const player = this.shoukaku.players.get(guildId);
     if (player) {
       await player.destroy().catch((err: unknown) => {
@@ -254,6 +276,33 @@ export class MusicController {
     if (this.persistence) {
       void this.persistence.drop(guildId);
     }
+  }
+
+  /**
+   * Stops playback but keeps the bot in the voice channel. Used when the queue
+   * is exhausted naturally — the VoiceActivityWatcher handles disconnecting once
+   * the bot is alone. Explicit /stop or dashboard stop should call stop() instead.
+   */
+  private async idle(guildId: string): Promise<void> {
+    const session = this.sessions.get(guildId);
+    if (session) {
+      this.saveHistoryAsync(guildId, [...session.history]);
+      session.idleReset();
+      this.publishQueueState(guildId);
+      this.persist(session);
+    }
+    const player = this.shoukaku.players.get(guildId);
+    if (player) {
+      await player.stopTrack().catch((err: unknown) => {
+        this.logger.warn({ err, guildId }, 'stopTrack on idle failed');
+      });
+    }
+  }
+
+  private saveHistoryAsync(guildId: string, history: import('@wesbot/shared').Track[]): void {
+    if (!this.statsRedis || history.length === 0) return;
+    const key = `track_history:${guildId}`;
+    void this.statsRedis.set(key, JSON.stringify(history), 'EX', 7 * 24 * 3600).catch(() => undefined);
   }
 
   async seek(guildId: string, positionMs: number): Promise<void> {
@@ -371,6 +420,16 @@ export class MusicController {
           timestamp: Date.now(),
         });
       }
+      if (this.statsRedis) {
+        const date = new Date().toISOString().slice(0, 10);
+        const key = `stats:songs:${guildId}:${date}`;
+        void this.statsRedis.incr(key).then(() => {
+          const d = new Date();
+          d.setDate(d.getDate() + 1);
+          d.setHours(0, 0, 0, 0);
+          void this.statsRedis!.expireat(key, Math.floor(d.getTime() / 1000));
+        }).catch(() => undefined);
+      }
     });
 
     player.on('end', (event) => {
@@ -433,8 +492,10 @@ export class MusicController {
     }
     const next = session.advance();
     if (next?.encoded) {
+      this.saveHistoryAsync(guildId, [...session.history]);
       await player.playTrack({ track: { encoded: next.encoded } });
       this.persist(session);
+      this.publishQueueState(guildId);
       return;
     }
 
@@ -454,8 +515,8 @@ export class MusicController {
       }
     }
 
-    this.logger.info({ guildId, reason }, 'queue exhausted, leaving voice');
-    await this.stop(guildId);
+    this.logger.info({ guildId, reason }, 'queue exhausted, idling in voice');
+    await this.idle(guildId);
   }
 
   private async findRelatedTrack(session: GuildMusicSession): Promise<Track | null> {

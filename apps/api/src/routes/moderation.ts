@@ -281,7 +281,7 @@ export function moderationRoutes(app: FastifyInstance, { prisma }: { prisma: Pri
     },
   );
 
-  // POST /api/guilds/:guildId/mod/actions  — publish command to bot
+  // POST /api/guilds/:guildId/mod/actions  — publish command to bot and await result
   const modActionBodySchema = z.discriminatedUnion('type', [
     z.object({ type: z.literal('warn'), targetUserId: z.string().regex(/^\d{17,20}$/), reason: z.string().min(1).max(512) }),
     z.object({ type: z.literal('kick'), targetUserId: z.string().regex(/^\d{17,20}$/), reason: z.string().min(1).max(512) }),
@@ -298,22 +298,61 @@ export function moderationRoutes(app: FastifyInstance, { prisma }: { prisma: Pri
       const { guildId } = guildIdParamSchema.parse(request.params);
       const u = request.user!;
       if (!u.accessToken) return reply.unauthorized();
+      if (!/^\d{17,20}$/.test(u.id)) return reply.unauthorized('Sessão desatualizada. Faça logout e entre novamente.');
       await assertGuildAccess(u.accessToken, guildId).catch(guardAccess(reply));
       if (reply.sent) return;
 
       const body = modActionBodySchema.parse(request.body);
       const requestId = crypto.randomUUID();
+      const replyChannel = `replies:bot:${requestId}`;
 
       const { type: actionType, ...rest } = body;
-      void app.redis.publish('commands:bot', JSON.stringify({
+      const payload = JSON.stringify({
         type: `mod.${actionType}`,
         requestId,
         guildId,
         moderatorId: u.id,
         ...rest,
-      }));
+      });
 
-      return reply.status(202).send({ ok: true, requestId });
+      const result = await new Promise<{ ok: boolean; error?: string }>((resolve) => {
+        const sub = app.redis.duplicate();
+        let done = false;
+
+        const finish = (r: { ok: boolean; error?: string }) => {
+          if (done) return;
+          done = true;
+          clearTimeout(timer);
+          sub.unsubscribe(replyChannel).catch(() => undefined);
+          sub.quit().catch(() => undefined);
+          resolve(r);
+        };
+
+        const timer = setTimeout(() => finish({ ok: false, error: 'timeout' }), 6000);
+
+        sub.subscribe(replyChannel, (err) => {
+          if (err) { finish({ ok: false, error: 'subscribe failed' }); return; }
+          app.redis.publish('commands:bot', payload).catch(() => undefined);
+        });
+
+        sub.on('message', (_ch: string, raw: string) => {
+          try {
+            finish(JSON.parse(raw) as { ok: boolean; error?: string });
+          } catch {
+            finish({ ok: false, error: 'invalid reply' });
+          }
+        });
+      });
+
+      if (!result.ok) {
+        const msg = result.error ?? 'Action failed';
+        if (msg === 'timeout') return reply.status(504).send({ error: 'Bot não respondeu a tempo.' });
+        if (msg.includes('Missing Permissions')) return reply.status(403).send({ error: 'O bot não tem permissão para executar esta ação neste servidor.' });
+        if (msg.includes('Unknown Member') || msg.includes('Unknown User')) return reply.status(404).send({ error: 'Membro não encontrado.' });
+        return reply.status(500).send({ error: msg });
+      }
+
+      return reply.status(200).send({ ok: true, requestId });
     },
   );
 }
